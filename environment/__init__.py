@@ -1,2 +1,2 @@
-from .map_loader import MapLoader
+from .map import Map
 from .walls import Wall

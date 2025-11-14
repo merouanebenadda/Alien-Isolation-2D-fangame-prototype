@@ -94,3 +94,10 @@ class Mesh():
             return is_on_unaccessible_tile, list(map(lambda node: self.position(node[0], node[1]), path))
         else:
             return is_on_unaccessible_tile, None
+        
+    def rect(self, i, j, density_opt=None):
+        density = self.density if density_opt == None else density_opt
+        edge_tolerance = self.edge_tolerance
+        i = max(0, i*density - edge_tolerance)
+        j = max(0, j*density - edge_tolerance)
+        return pygame.Rect(i, j, density + 2*edge_tolerance, density+ 2*edge_tolerance)

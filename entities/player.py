@@ -3,7 +3,8 @@ import pygame
 import math
 
 class Player(Entity):
-    def __init__(self, x, y):
+    def __init__(self, x, y=None):
+        if y == None: x, y = x
         super().__init__(x, y)
         self.MAX_STAMINA = 300
         self.base_speed = 2
@@ -12,13 +13,13 @@ class Player(Entity):
         self.stamina = self.MAX_STAMINA
         
 
-        PLAYER_SIZE = (32, 32)
-        player_surface = pygame.image.load('textures/player/black_dot.png').convert_alpha()
+        PLAYER_SIZE = (25, 25)
+        player_surface = pygame.image.load('textures/player/blue_dot.png').convert_alpha()
         self.texture = pygame.transform.scale(player_surface, PLAYER_SIZE)
         self.rect = self.texture.get_rect()
         self.rect.center = (x, y)
 
-    def move(self, is_pressed, current_map):
+    def move(self, is_pressed, current_map, dt):
         old_x = self.x_pos
         old_y = self.y_pos
 
@@ -49,4 +50,4 @@ class Player(Entity):
         norm = math.sqrt(movement_vector_x**2 + movement_vector_y**2)
 
         if norm != 0:
-            super().move(movement_vector_x, movement_vector_y, norm, old_x, old_y, current_map)
+            super().move(movement_vector_x, movement_vector_y, norm, old_x, old_y, current_map, dt)

@@ -1,7 +1,8 @@
 import pygame
 
-def draw_mesh(screen, current_map, enemy):
+def draw_mesh(screen, current_map, enemy, dt):
     # Draw walls
+    font = pygame.font.Font(None, 40)
     for w in current_map.walls:
         pygame.draw.rect(screen, (255, 0, 0), w)
 
@@ -30,3 +31,8 @@ def draw_mesh(screen, current_map, enemy):
                 (p2[0], p2[1]),
                 3
             )
+
+    if dt != 0:
+        fps = str(int(1/dt))
+        fps_surface = font.render(fps, True, (0, 255, 0))
+        screen.blit(fps_surface, (0, 0))

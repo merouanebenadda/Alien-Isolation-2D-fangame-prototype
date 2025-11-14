@@ -6,17 +6,21 @@ import os
 import math
 import pickle
 
-DENSITY = 25
+DENSITY = 15
 
-class MapLoader():
+class Map():
     def __init__(self, current_map):
         self.name = current_map
         self.walls = []
         self.background = pygame.image.load(f'maps/{current_map}/background.png')
         self.size = self.background.get_size()
         self.parse_walls()
-        self.nav_mesh = self.generate_nav_mesh()
+        self.player_spawn = None 
+        self.enemy_spawn = None
+        density, edge_tolerance = self.parse_settings()
+        self.nav_mesh = self.generate_nav_mesh(density, edge_tolerance)
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
+
  
     def parse_walls(self):
         with open(f"maps/{self.name}/walls.txt") as file:
@@ -32,8 +36,34 @@ class MapLoader():
                 except ValueError:
                     print(f"Error parsing line : {line}")
                     continue
+
+    def parse_settings(self):
+        with open(f"maps/{self.name}/settings.txt") as file:
+            parsed_data = {}
+            for line in file:
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                try:
+                    key, item = line.split(':')
+                    key = key.strip()
+                    values = list(map(int, item.split(',')))
+                    if len(values) == 1:
+                        parsed_data[key] = values[0]
+                    else:
+                        parsed_data[key] = tuple(values)
+                except ValueError:
+                    print(f"Error parsing line : {line}")
+                    continue
+            
+            self.player_spawn = parsed_data["player_spawn"]
+            self.enemy_spawn = parsed_data["enemy_spawn"]
+            return parsed_data["density"], parsed_data["edge_tolerance"]
+
   
-    def generate_nav_mesh(self):
+    def generate_nav_mesh(self, density, edge_tolerance):
         path = f"maps/{self.name}/navmesh.pkl"
         #commented for debugging, caches mesh calculation
         # if os.path.exists(path):
@@ -45,7 +75,7 @@ class MapLoader():
         #     with open(path, 'wb') as f:
         #         pickle.dump(mesh, f)
         #     return mesh # density = distance in px between two nodes
-        mesh = generate(self.size, self.walls, DENSITY)
+        mesh = generate(self.size, self.walls, density, edge_tolerance)
         with open(path, 'wb') as f:
             pickle.dump(mesh, f)
         return mesh 
@@ -64,36 +94,3 @@ class MapLoader():
         return walls
 
     
-    def resolve_collision_x(self, entity, dx):
-        if isinstance(entity, Enemy):
-            walls = self.walls
-
-        if isinstance(entity, Player):
-            walls = self.walls
-
-        for wall in walls:
-            if wall.rect.colliderect(entity.rect):
-                if dx < 0 and entity.rect.left < wall.rect.right:
-                    entity.rect.left = wall.rect.right
-                if dx > 0 and entity.rect.right > wall.rect.left:
-                    entity.rect.right = wall.rect.left
-                    
-                entity.x_pos, entity.y_pos = entity.rect.center
-
-    def resolve_collision_y(self, entity, dy):
-        if isinstance(entity, Enemy):
-            walls = self.walls
-
-        if isinstance(entity, Player):
-            walls = self.walls
-
-        for wall in walls:
-            if wall.rect.colliderect(entity.rect):
-                if dy < 0 and entity.rect.top < wall.rect.bottom:
-                    entity.rect.top = wall.rect.bottom
-                    
-                if dy > 0 and entity.rect.bottom > wall.rect.top:
-                    entity.rect.bottom = wall.rect.top
-
-                entity.x_pos, entity.y_pos = entity.rect.center
-

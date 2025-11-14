@@ -1,0 +1,5 @@
+player_spawn: 453, 225
+enemy_spawn: 590, 786
+
+density: 15
+edge_tolerance: 10
