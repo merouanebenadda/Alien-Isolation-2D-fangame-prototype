@@ -131,4 +131,9 @@ class Map():
                     walls.append(Wall(i*density, j*density, density, density))
         return walls
 
-    
+    def point_collidelist(self, point):
+        for wall in self.walls:
+            if wall.rect.collidepoint(point):
+                return True
+            
+        return False

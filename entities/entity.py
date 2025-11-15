@@ -126,17 +126,21 @@ class Entity(pygame.sprite.Sprite):
 
                 self.x_pos, self.y_pos = self.rect.center
 
-    def furthest_point_in_direction(self, angle, current_map):
-        x = self.x_pos
-        y = self.y_pos
-        
-        step = 5
-        detector = pygame.Rect(0, 0, 1, 1)
 
-        while detector.collidelist(current_map.walls) == -1:
+    @staticmethod
+    def furthest_point_in_direction(point, angle, current_map):
+        x, y = point
+        
+        step = 0.5
+        x += step*cos(angle*math.pi/180)
+        y += step*sin(angle*math.pi/180)
+
+        if current_map.point_collidelist((x, y)):
+            return None
+
+        while not current_map.point_collidelist((x, y)):
             x += step*cos(angle*math.pi/180)
             y += step*sin(angle*math.pi/180)
-            detector.center = x, y
 
         return x, y
 
@@ -149,19 +153,35 @@ class Entity(pygame.sprite.Sprite):
         corner_angles = []
         triangles_list = []
 
-        eps = 0.5
+        pixel_eps = 1e-5
+        angle_eps = 1e-9
 
         for wall in current_map.wall_corners.keys():
             corners = current_map.wall_corners[wall]
 
             for corner in corners:
                 if self.can_see_point(corner, current_map):
-                    vision_angle = angle(pos, corner), corner
+                    vision_angle = angle(pos, corner)%360, corner
                     bisect.insort_left(corner_angles, vision_angle)
 
-                    for secondary_angle in [vision_angle[0] - eps, vision_angle[0] + eps]:
-                        secondary_angle = secondary_angle, self.furthest_point_in_direction(secondary_angle, current_map)
-                        bisect.insort_left(corner_angles, secondary_angle)
+                    x = corner[0]-self.x_pos
+                    y = corner[1]-self.y_pos
+                    norm = math.sqrt(x**2 + y**2)
+                    dx_orth, dy_orth = -y/norm*pixel_eps, x/norm*pixel_eps
+
+                    if wall.rect.collidepoint(corner[0]+dx_orth, corner[1]+dy_orth): # we determine in which direction the corner ends
+                        furthest = self.furthest_point_in_direction(corner, vision_angle[0]-angle_eps, current_map)
+                        if furthest == None:
+                           continue
+                        furthest_point = (vision_angle[0]-angle_eps)%360, furthest
+                        bisect.insort_left(corner_angles, furthest_point)
+
+                    else:
+                        furthest = self.furthest_point_in_direction(corner, vision_angle[0]-angle_eps, current_map)
+                        if furthest == None:
+                            continue
+                        furthest_point = (vision_angle[0]+angle_eps)%360, furthest
+                        bisect.insort_left(corner_angles, furthest_point)
 
         
         n = len(corner_angles)
