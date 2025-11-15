@@ -30,12 +30,8 @@ while running:
     enemy.update(player, current_map, dt)
 
     screen.blit(current_map.background, (0, 0))
-    debug.draw_mesh(screen, current_map, enemy, dt)
 
-    fog_surface = pygame.Surface(current_map.size)
-    fog_surface.fill((0, 0, 0)) # Black color
-    fog_surface.set_alpha(225)
-    screen.blit(fog_surface, (0, 0))
+    debug.draw_mesh(screen, current_map, player, enemy, dt)
 
     pygame.mouse.set_visible(False)
 
@@ -46,12 +42,17 @@ while running:
     light_surface = pygame.Surface(current_map.size, pygame.SRCALPHA)
     light_surface.fill((0, 0, 0)) # Black color
     light_surface.set_colorkey((0, 0, 0))
-    for triangle in player.cast_rays(0, 0, current_map):
+    for triangle in player.cast_rays(player.mouse_angle, player.fov_angle, current_map):
         pygame.draw.polygon(light_surface, (255, 255, 255, 100), triangle)
         
+    fog_surface = pygame.Surface(current_map.size)
+    fog_surface.fill((0, 0, 0)) # Black color
+    fog_surface.set_alpha(255)
+    fog_surface.blit(light_surface, (0, 0),  special_flags=pygame.BLEND_RGBA_SUB)
+    fog_surface.set_alpha(225)
+    screen.blit(fog_surface, (0, 0))
+
     screen.blit(light_surface, (0, 0))
-
-
     
     
     pygame.display.flip()

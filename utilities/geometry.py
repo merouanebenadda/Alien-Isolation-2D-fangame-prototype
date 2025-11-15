@@ -53,4 +53,4 @@ def angle(pos1, pos2):
     x1, y1 = pos1
     x2, y2 = pos2
 
-    return arctan2(y2-y1, x2-x1)*180/math.pi
+    return (arctan2(y2-y1, x2-x1)*180/math.pi)%360 # in [0, 360)

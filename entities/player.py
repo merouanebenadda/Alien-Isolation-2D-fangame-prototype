@@ -29,6 +29,9 @@ class Player(Entity):
         self.crosshair_rect = self.crosshair_texture.get_rect()
         self.crosshair_rect.center = (x, y)
 
+        self.mouse_angle = 0
+        self.fov_angle = 90
+
         # This idea fucking sucks
         # self.VISION_CONE_SIZE = (100, 100)
         # #271, 0
@@ -37,18 +40,6 @@ class Player(Entity):
         # self.vision_cone_rect = self.vision_cone_texture.get_rect()
         # self.vision_cone_rect.bottomleft = (x, y)
 
-    # def update_vision_cone(self, mouse_pos):
-    #     base_angle = 30 # the angle of vision is 60°, so we don't rotate if angle = base_angle
-
-    #     x_m, y_m = mouse_pos
-    #     x, y = self.x_pos, self.y_pos
-
-    #     angle = arctan2(y_m-y, x_m-x)*180/math.pi-90
-
-    #     self.vision_cone_texture = pygame.transform.rotate(self.vision_cone_surface, -angle)
-    #     self.vision_cone_texture = pygame.transform.scale(self.vision_cone_surface, self.VISION_CONE_SIZE)
-    #     self.vision_cone_rect = self.vision_cone_texture.get_rect(bottomleft=self.vision_cone_rect.bottomleft)
-    #     self.vision_cone_rect.bottomleft = (x, y)
         
 
     def update(self, is_pressed, current_map, dt):
@@ -63,6 +54,12 @@ class Player(Entity):
         mouse_pos =  pygame.mouse.get_pos()
         self.crosshair_x_pos, self.crosshair_y_pos = mouse_pos
         self.crosshair_rect.center = mouse_pos
+
+        x_m, y_m = mouse_pos
+        x, y = self.x_pos, self.y_pos
+
+        self.mouse_angle = (arctan2(y_m-y, x_m-x)*180/math.pi)%360 # in [0, 360)
+
 
         #self.update_vision_cone(mouse_pos, current_map)
 
