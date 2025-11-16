@@ -7,13 +7,13 @@ import sys
 import os
 
 # --- Configuration ---
-SCREEN_WIDTH, SCREEN_HEIGHT = 1024, 1024
-BACKGROUND_FILE = 'maps/map1/background.png'  # ASSUME THIS PATH based on your main.py
-OUTPUT_FILE = 'maps/map1/walls.txt'
+SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
+BACKGROUND_FILE = 'maps/map0/background.png'  # ASSUME THIS PATH based on your main.py
+OUTPUT_FILE = 'maps/map0/walls.txt'
 
 # --- Initialization ---
 pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), flags=pygame.FULLSCREEN)
 pygame.display.set_caption("Pygame Wall Editor Tool (S: Save, C: Clear)")
 clock = pygame.time.Clock()
 

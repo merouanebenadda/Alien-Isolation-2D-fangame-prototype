@@ -19,9 +19,9 @@ class Enemy(Entity):
         self.rect.center = (x, y)
         
         # --- Movement and State ---
-        self.base_speed = 1
-        self.sprint_speed = 3
-        self.rush_speed = 5
+        self.base_speed = 3
+        self.sprint_speed = 5
+        self.rush_speed = 9
         self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
         self.rush_threshold = 64
         

@@ -9,8 +9,8 @@ class Player(Entity):
         if y == None: x, y = x
         super().__init__(x, y)
         self.MAX_STAMINA = 300
-        self.base_speed = 2
-        self.sprint_speed = 4
+        self.base_speed = 5
+        self.sprint_speed = 8
         self.current_speed = self.base_speed
         self.stamina = self.MAX_STAMINA
         self.is_alive = True

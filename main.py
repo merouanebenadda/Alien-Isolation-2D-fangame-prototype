@@ -5,7 +5,7 @@ from renderer import GameRenderer, MenuRenderer
 
 pygame.init()
 resolution = (1920, 1080)
-screen = pygame.display.set_mode(resolution)
+screen = pygame.display.set_mode(resolution, flags = pygame.FULLSCREEN)
 pygame.display.set_caption("Stalker")
 clock = pygame.time.Clock()
 running = True
@@ -49,6 +49,8 @@ while running:
             if event.key == pygame.K_RETURN:
                 game_state = "GAME_RUNNING"
                 current_map, renderer, player, enemy = initialize_new_game(screen)
+            if event.key == pygame.K_ESCAPE:
+                running = False
 
     dt = clock.get_time()/1000 # time elapsed since last frame
 
