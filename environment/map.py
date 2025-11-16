@@ -12,7 +12,7 @@ class Map():
     def __init__(self, current_map, screen):
         self.name = current_map
         self.walls = []
-        self.background = pygame.image.load(f'maps/{current_map}/background.png')
+        self.background = pygame.image.load(f'maps/{current_map}/background.png').convert()
         self.size = screen.get_size()
         #self.background = pygame.transform.scale(background, self.size)
         self.parse_walls()

@@ -19,8 +19,8 @@ class Enemy(Entity):
         self.rect.center = (x, y)
         
         # --- Movement and State ---
-        self.base_speed = 3
-        self.sprint_speed = 5
+        self.base_speed = 1
+        self.sprint_speed = 4
         self.rush_speed = 9
         self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
         self.rush_threshold = 64
@@ -44,6 +44,8 @@ class Enemy(Entity):
         self.chase_duration = 10000
         self.search_timer = 0
         self.search_duration = 5000
+        self.last_time_seen = 0
+        self.follow_after_lost_sight_duration = 1500
 
     def switch_state(self, state):
         current_time = pygame.time.get_ticks()
@@ -141,11 +143,13 @@ class Enemy(Entity):
         if self.can_see_entity(player, current_map) and pygame.time.get_ticks() - self.last_path_computation_time > self.path_computation_refresh:
             self.switch_state('COMPUTE_CHASE')
 
-        # try:
-        #     self.follow_path(current_map, dt)
-        # except ValueError:
-        #     self.switch_state('COMPUTE_CHASE')
         if self.can_see_entity(player, current_map):
+            self.last_time_seen = pygame.time.get_ticks()
+            try:
+                self.follow_path(current_map, dt)
+            except ValueError:
+                self.switch_state('COMPUTE_CHASE')
+        elif pygame.time.get_ticks() - self.last_time_seen < self.follow_after_lost_sight_duration:
             try:
                 self.follow_path(current_map, dt)
             except ValueError:
