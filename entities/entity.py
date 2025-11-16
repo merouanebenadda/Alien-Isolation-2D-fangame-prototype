@@ -129,7 +129,7 @@ class Entity(pygame.sprite.Sprite):
     def furthest_point_in_direction(point, angle, current_map):
         x, y = point
         
-        step = 1
+        step = 5
         x += step*cos(angle*math.pi/180)
         y += step*sin(angle*math.pi/180)
 
@@ -157,8 +157,8 @@ class Entity(pygame.sprite.Sprite):
         corner_angles = []
         triangles_list = []
 
-        pixel_eps = 1e-6
-        angle_eps = 1e-6
+        pixel_eps = 1e-9
+        angle_eps = 1e-9
 
         right_limit = (orientation-fov/2)%360
         left_limit = (orientation+fov/2)%360

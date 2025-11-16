@@ -15,16 +15,6 @@ game_state = "MAIN_MENU"
 
 sound_manager = SoundManager()
 
-# current_map_name = "map0"
-# current_map = Map(current_map_name)
-# screen = pygame.display.set_mode(current_map.size)
-
-# renderer = Renderer(screen, current_map)
-
-# player = Player(current_map.player_spawn)
-
-# enemy = Enemy(current_map.enemy_spawn)
-
 def initialize_new_game(screen):
     sound_manager.stop_music()
     current_map_name = "map0"

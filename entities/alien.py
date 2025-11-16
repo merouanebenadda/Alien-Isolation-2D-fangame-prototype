@@ -21,6 +21,7 @@ class Alien(Entity):
         # --- Movement and State ---
         self.current_speed = 0
         self.base_speed = 1
+        self.search_speed = 2
         self.sprint_speed = 4
         self.rush_speed = 9
         self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
@@ -44,9 +45,9 @@ class Alien(Entity):
         self.chase_timer = 0
         self.chase_duration = 10000
         self.search_timer = 0
-        self.search_duration = 5000
+        self.search_duration = 15000
         self.last_time_seen = 0
-        self.follow_after_lost_sight_duration = 1500
+        self.follow_after_lost_sight_duration = 5000
 
         # Audio logic
 
@@ -60,7 +61,7 @@ class Alien(Entity):
 
     def switch_state(self, state, sound_manager=None):
         current_time = pygame.time.get_ticks()
-        if state in ['COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS']:
+        if state in ['COMPUTE_CHASE', 'COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS']:
             self.hiss_timer = current_time
             self.chase_timer = current_time
             self.search_timer = current_time
@@ -220,7 +221,7 @@ class Alien(Entity):
             pass
     
     def update_search(self, current_map, dt):
-        self.current_speed = self.base_speed
+        self.current_speed = self.search_speed
         if pygame.time.get_ticks() - self.search_timer > self.search_duration:
             self.switch_state('COMPUTE_PATROL')
         else:    
