@@ -42,15 +42,16 @@ while running:
             running = False
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_f:
-                renderer.dark_mode = not renderer.dark_mode
-            if event.key == pygame.K_v:
-                renderer.debug_mode = not renderer.debug_mode
             if event.key == pygame.K_RETURN:
                 game_state = "GAME_RUNNING"
                 current_map, renderer, player, enemy = initialize_new_game(screen)
             if event.key == pygame.K_ESCAPE:
                 running = False
+            if game_state == 'GAME_RUNNING':
+                if event.key == pygame.K_f:
+                    renderer.dark_mode = not renderer.dark_mode
+                if event.key == pygame.K_v:
+                    renderer.debug_mode = not renderer.debug_mode
 
     dt = clock.get_time()/1000 # time elapsed since last frame
 
