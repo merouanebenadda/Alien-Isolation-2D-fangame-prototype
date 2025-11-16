@@ -4,6 +4,7 @@ from utilities.mesh import Mesh
 from utilities import geometry
 import pygame
 import math
+from random import gauss
 import sys
 
 class Alien(Entity):
@@ -13,7 +14,7 @@ class Alien(Entity):
         
         # --- Appearance and Collision ---
         self.ENEMY_SIZE = (25, 25)
-        enemy_surface = pygame.image.load('textures/enemy/red_dot.png').convert_alpha()
+        enemy_surface = pygame.image.load('assets/textures/enemy/red_dot.png').convert_alpha()
         self.texture = pygame.transform.scale(enemy_surface, self.ENEMY_SIZE)
         self.rect = self.texture.get_rect()
         self.rect.center = (x, y)
@@ -26,6 +27,7 @@ class Alien(Entity):
         self.rush_speed = 9
         self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
         self.rush_threshold = 64
+        self.previous_state = None
         
         # --- Pathfinding and Navigation ---
         self.current_path = None
@@ -34,8 +36,8 @@ class Alien(Entity):
         self.is_on_unaccessible_tile = None
         self.rush_range = 100
         self.kill_range = self.ENEMY_SIZE[0]
-        self.patrol_range = (350, 1e9)
-        self.search_range = (50, 150)
+        self.patrol_range = (500, 1e9)
+        self.search_range = (40, 250)
         
         # --- Timing and Refresh ---
         self.last_path_computation_time = 0
@@ -46,6 +48,10 @@ class Alien(Entity):
         self.chase_duration = 10000
         self.search_timer = 0
         self.search_duration = 15000
+        self.look_around_timer = 0
+        self.look_around_duration = 0
+        self.look_around_mean = 4000
+        self.look_around_std_dev = 1000
         self.last_time_seen = 0
         self.follow_after_lost_sight_duration = 5000
 
@@ -61,11 +67,18 @@ class Alien(Entity):
 
     def switch_state(self, state, sound_manager=None):
         current_time = pygame.time.get_ticks()
-        if state in ['COMPUTE_CHASE', 'COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS']:
+        self.previous_state = self.state
+
+        if state in ['COMPUTE_CHASE', 'COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS'] and self.previous_state != 'LOOK_AROUND':
             self.hiss_timer = current_time
             self.chase_timer = current_time
             self.search_timer = current_time
             
+            
+        if state == 'LOOK_AROUND':
+            self.look_around_duration = gauss(self.look_around_mean, self.look_around_std_dev)
+            self.look_around_timer = current_time
+
         if state == 'KILL':
             sound_manager.play_sfx('kill')
 
@@ -74,7 +87,7 @@ class Alien(Entity):
 
         self.state = state
 
-    def rush(self, player:Player, current_map, dt):
+    def rush(self, player, current_map, dt):
         old_x = self.x_pos
         old_y = self.y_pos
 
@@ -182,9 +195,6 @@ class Alien(Entity):
                 self.switch_state('COMPUTE_SEARCH')
 
     def update_compute_patrol(self, current_map, dt):
-        if pygame.time.get_ticks() - self.last_path_computation_time < self.path_computation_refresh: 
-             return
-
         rand_x, rand_y =  current_map.nav_mesh.random_tile(self, self.patrol_range)
 
         self.is_on_unaccessible_tile, path = current_map.nav_mesh.compute_path(self, (rand_x, rand_y)) 
@@ -203,10 +213,9 @@ class Alien(Entity):
         try:
             self.follow_path(current_map, dt)
         except ValueError:
-            self.switch_state('COMPUTE_PATROL')
+            self.switch_state('LOOK_AROUND')
 
     def update_compute_search(self, current_map, dt): 
-
         rand_x, rand_y =  current_map.nav_mesh.random_tile(self, self.search_range)
 
         self.is_on_unaccessible_tile, path = current_map.nav_mesh.compute_path(self, (rand_x, rand_y)) 
@@ -228,7 +237,14 @@ class Alien(Entity):
             try:
                 self.follow_path(current_map, dt)
             except ValueError:
-                self.switch_state('COMPUTE_SEARCH')
+                self.switch_state('LOOK_AROUND')
+
+    def update_look_around(self):
+        if pygame.time.get_ticks()-self.look_around_timer > self.look_around_duration:
+            prev_state = self.previous_state
+            self.previous_state = 'LOOK_AROUND'
+            self.switch_state('COMPUTE_' + prev_state)
+    
 
     def update_kill(self, player, current_map, dt):
         # insert the animation logic
@@ -278,6 +294,9 @@ class Alien(Entity):
         
         if self.state == 'SEARCH':
             self.update_search(current_map, dt)
+
+        if self.state == 'LOOK_AROUND':
+            self.update_look_around()
 
         if self.state == 'RUSH':
             self.update_rush(player, current_map, dt)

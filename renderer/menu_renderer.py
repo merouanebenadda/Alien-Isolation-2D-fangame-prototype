@@ -5,7 +5,7 @@ class MenuRenderer():
     def __init__(self, screen):
         self.screen = screen
         self.size = 1920, 1080
-        background = pygame.image.load('textures/main_menu/main_menu.jpeg')
+        background = pygame.image.load('assets/textures/main_menu/main_menu.jpeg')
         self.background = pygame.transform.scale(background, self.size)
 
 

@@ -12,7 +12,7 @@ class Mesh():
         self.edge_tolerance = edge_tolerance
         self.adjacency_map = {}
 
-    def random_tile(self, enemy, range):
+    def random_tile(self, enemy, range): # /!\ has to be optimized, especially for bigger maps
         inf, sup = range
         x, y = enemy.x_pos, enemy.y_pos
 
@@ -23,7 +23,7 @@ class Mesh():
         rand_i, rand_j = keys_list[rd.randint(0, n-1)]
         rand_x, rand_y = self.position(rand_i, rand_j)
 
-        while inf < euclidian_distance((x, y), (rand_x, rand_y)) < sup and not self.adjacency_map[(rand_i, rand_j)]:
+        while (not inf < euclidian_distance((x, y), (rand_x, rand_y)) < sup) or not self.adjacency_map[(rand_i, rand_j)]:
             rand_i, rand_j = keys_list[rd.randint(0, n-1)]
             rand_x, rand_y = self.position(rand_i, rand_j)
 

@@ -74,6 +74,11 @@ class GameRenderer():
                     3
                 )
 
+        state = enemy.state
+        state_surface = font.render(state, True, (255, 0, 0))
+        screen.blit(state_surface, (1700, 1040))
+
+
         if self.dark_mode:
             # Debug: highlight triangle corners in cyan
             for triangle in player.cast_rays(player.mouse_angle, player.fov_angle, current_map):

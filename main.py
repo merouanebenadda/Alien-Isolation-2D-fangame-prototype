@@ -56,10 +56,18 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 game_state = "GAME_RUNNING"
                 current_map, renderer, player, alien = initialize_new_game(screen)
+
+            if event.key == pygame.K_m:
+                if sound_manager.mute:
+                    sound_manager.resume_all_audio()
+                else:
+                    sound_manager.pause_all_audio()
+                sound_manager.mute = not sound_manager.mute
                 
 
             if game_state == 'GAME_RUNNING':

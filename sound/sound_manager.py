@@ -3,6 +3,7 @@ import os, pygame
 class SoundManager():
     def __init__(self):
         self.current_music = None
+        self.mute = True
         self.sfx = {}
         self.init_player_sfx()
         self.init_alien_sfx()
@@ -77,7 +78,17 @@ class SoundManager():
         self.stop_music()
         pygame.mixer.stop()
 
+    def pause_all_audio(self):
+        pygame.mixer.music.pause() 
+        pygame.mixer.pause() 
+
+    def resume_all_audio(self):
+        pygame.mixer.music.unpause() 
+        pygame.mixer.unpause()
+
     def play_sfx(self, sfx_name, volume=1.0):
+        if self.mute:
+            return
         if sfx_name in self.sfx:
             sound = self.sfx[sfx_name]
             sound.set_volume(volume)
