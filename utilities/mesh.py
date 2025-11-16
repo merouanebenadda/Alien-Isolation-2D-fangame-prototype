@@ -11,9 +11,9 @@ class Mesh():
         self.density = density
         self.edge_tolerance = edge_tolerance
         self.adjacency_map = {}
-        self.go_to_threshold = 150
 
-    def random_tile(self, enemy):
+    def random_tile(self, enemy, range):
+        inf, sup = range
         x, y = enemy.x_pos, enemy.y_pos
 
         n = len(self.adjacency_map)
@@ -23,8 +23,8 @@ class Mesh():
         rand_i, rand_j = keys_list[rd.randint(0, n-1)]
         rand_x, rand_y = self.position(rand_i, rand_j)
 
-        while euclidian_distance((x, y), (rand_x, rand_y)) < self.go_to_threshold and not self.adjacency_map[(rand_i, rand_j)]:
-            rand_i, rand_j = self.adjacency_map.keys[rd.randint(0, n-1)]
+        while inf < euclidian_distance((x, y), (rand_x, rand_y)) < sup and not self.adjacency_map[(rand_i, rand_j)]:
+            rand_i, rand_j = keys_list[rd.randint(0, n-1)]
             rand_x, rand_y = self.position(rand_i, rand_j)
 
         return rand_x, rand_y
@@ -71,7 +71,7 @@ class Mesh():
         if self.adjacency_map.get((i, j)):
             return (i, j)
 
-        max_dist = 2
+        max_dist = 3
         # 8 directions (cardinal + diagonals)
         directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
         blocked_dirs = set()

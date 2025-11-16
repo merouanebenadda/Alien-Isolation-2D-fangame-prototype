@@ -13,6 +13,7 @@ class Player(Entity):
         self.sprint_speed = 4
         self.current_speed = self.base_speed
         self.stamina = self.MAX_STAMINA
+        self.is_alive = True
         
 
         PLAYER_SIZE = (25, 25)
@@ -32,13 +33,7 @@ class Player(Entity):
         self.mouse_angle = 0
         self.fov_angle = 90
 
-        # This idea fucking sucks
-        # self.VISION_CONE_SIZE = (100, 100)
-        # #271, 0
-        # self.vision_cone_surface = pygame.image.load('textures/player/vision_cone.png')
-        # self.vision_cone_texture = pygame.transform.scale(self.vision_cone_surface, self.VISION_CONE_SIZE)
-        # self.vision_cone_rect = self.vision_cone_texture.get_rect()
-        # self.vision_cone_rect.bottomleft = (x, y)
+
 
         
 
@@ -63,7 +58,10 @@ class Player(Entity):
 
         #self.update_vision_cone(mouse_pos, current_map)
 
-        if is_pressed[pygame.K_LSHIFT] and self.stamina > 0:
+        if not self.is_alive:
+            return
+
+        if is_pressed[pygame.K_LSHIFT]:# and self.stamina > 0:
             self.current_speed = self.sprint_speed
             self.stamina = max(self.stamina - 3, 0)
 

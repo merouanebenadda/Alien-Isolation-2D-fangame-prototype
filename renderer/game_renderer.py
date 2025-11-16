@@ -1,7 +1,7 @@
 import pygame
 
 
-class Renderer():
+class GameRenderer():
     def __init__(self, screen, current_map):
         self.screen = screen
         self.map = current_map
@@ -25,7 +25,7 @@ class Renderer():
         self.screen.blit(light_surface, (0, 0))
 
 
-    def render(self, player, enemy, dt):
+    def render_game(self, player, enemy, dt):
         self.screen.blit(self.map.background, (0, 0))
 
         pygame.mouse.set_visible(False)
@@ -85,3 +85,4 @@ class Renderer():
             fps = str(int(1/dt))
             fps_surface = font.render(fps, True, (0, 255, 0))
             screen.blit(fps_surface, (0, 0))
+

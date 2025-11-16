@@ -19,8 +19,9 @@ class Enemy(Entity):
         self.rect.center = (x, y)
         
         # --- Movement and State ---
+        self.base_speed = 1
         self.sprint_speed = 3
-        self.catch_speed = 5
+        self.rush_speed = 5
         self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
         self.rush_threshold = 64
         
@@ -29,6 +30,10 @@ class Enemy(Entity):
         self.next_position = None
         self.current_objective = None
         self.is_on_unaccessible_tile = None
+        self.rush_range = 100
+        self.kill_range = self.ENEMY_SIZE[0]
+        self.patrol_range = (350, 1e9)
+        self.search_range = (50, 150)
         
         # --- Timing and Refresh ---
         self.last_path_computation_time = 0
@@ -36,13 +41,24 @@ class Enemy(Entity):
         self.hiss_timer = 0
         self.hiss_duration = 2000
         self.chase_timer = 0
-        self.chase_duration = 3000
+        self.chase_duration = 10000
+        self.search_timer = 0
+        self.search_duration = 5000
+
+    def switch_state(self, state):
+        current_time = pygame.time.get_ticks()
+        if state in ['COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS']:
+            self.hiss_timer = current_time
+            self.chase_timer = current_time
+            self.search_timer = current_time
+
+        self.state = state
 
     def rush(self, player:Player, current_map, dt):
         old_x = self.x_pos
         old_y = self.y_pos
 
-        self.current_speed = self.sprint_speed
+        self.current_speed = self.rush_speed
 
         if player.x_pos == self.x_pos and player.y_pos == self.y_pos:
             return None
@@ -89,37 +105,31 @@ class Enemy(Entity):
 
     def update_hiss(self, player, current_map, dt):
         if not self.can_see_entity(player, current_map):
-            self.chase_timer = pygame.time.get_ticks()
-            self.state = 'COMPUTE_CHASE'
+            self.switch_state('COMPUTE_CHASE')
         if pygame.time.get_ticks() - self.hiss_timer > self.hiss_duration:
-            self.state = 'COMPUTE_CHASE'
+            self.switch_state('COMPUTE_CHASE')
 
     def update_rush(self, player, current_map, dt):
-        self.current_speed = self.catch_speed
+        self.current_speed = self.rush_speed
         if self.can_see_entity(player, current_map):
             self.rush(player, current_map, dt)
         else:
-            self.state = 'FINDING'
+            self.switch_state('COMPUTE_SEARCH')
 
     def update_finding(self, player, current_map, dt):
         self.update_path(player, current_map)
         self.last_path_computation_time = pygame.time.get_ticks()
-        self.state = 'CHASE'
+        self.switch_state('CHASE')
 
     def update_compute_chase(self, player, current_map, dt):
-        self.chase_timer = pygame.time.get_ticks()
-        # Ensure path computation is only done periodically to avoid lag
-        if pygame.time.get_ticks() - self.last_path_computation_time < 1000: 
-             return
-
-        # The path computation function should ideally take a target position tuple
         self.is_on_unaccessible_tile, path = current_map.nav_mesh.compute_path(self, (player.x_pos, player.y_pos)) 
         
         if path: # Check for truthiness of path (not None)
             self.current_path = path
             self.next_position = self.current_path.pop()
             self.current_objective = (player.x_pos, player.y_pos)
-            self.state = 'CHASE'
+            self.last_path_computation_time = pygame.time.get_ticks()
+            self.switch_state('CHASE')
         else:
             # If the random point is unreachable, stay in COMPUTE_PATROL 
             # (or switch to a neutral 'IDLE' state) and try again next frame.
@@ -128,22 +138,32 @@ class Enemy(Entity):
 
     def update_chase(self, player, current_map, dt):
         self.current_speed = self.sprint_speed
-        if pygame.time.get_ticks() - self.last_path_computation_time > self.path_computation_refresh:
-            self.state = 'COMPUTE_CHASE'
-        if self.can_see_entity(player, current_map) or pygame.time.get_ticks() - self.chase_timer < self.chase_duration:
+        if self.can_see_entity(player, current_map) and pygame.time.get_ticks() - self.last_path_computation_time > self.path_computation_refresh:
+            self.switch_state('COMPUTE_CHASE')
+
+        # try:
+        #     self.follow_path(current_map, dt)
+        # except ValueError:
+        #     self.switch_state('COMPUTE_CHASE')
+        if self.can_see_entity(player, current_map):
             try:
                 self.follow_path(current_map, dt)
             except ValueError:
-                self.state = 'COMPUTE_CHASE'
+                self.switch_state('COMPUTE_CHASE')
+        elif pygame.time.get_ticks() - self.chase_timer < self.chase_duration:
+            try:
+                self.follow_path(current_map, dt)
+            except ValueError:
+                self.switch_state('COMPUTE_SEARCH')
         else:
             if pygame.time.get_ticks() - self.chase_timer > self.chase_duration:
-                self.state = 'PATROL'
+                self.switch_state('COMPUTE_SEARCH')
 
     def update_compute_patrol(self, current_map, dt):
         if pygame.time.get_ticks() - self.last_path_computation_time < self.path_computation_refresh: 
              return
 
-        rand_x, rand_y =  current_map.nav_mesh.random_tile(self) # Assuming this gets coordinates
+        rand_x, rand_y =  current_map.nav_mesh.random_tile(self, self.patrol_range)
 
         self.is_on_unaccessible_tile, path = current_map.nav_mesh.compute_path(self, (rand_x, rand_y)) 
         
@@ -151,7 +171,7 @@ class Enemy(Entity):
             self.current_path = path
             self.next_position = self.current_path.pop()
             self.current_objective = (rand_x, rand_y)
-            self.state = 'PATROL'
+            self.switch_state('PATROL')
         else:
             self.last_path_computation_time = pygame.time.get_ticks()
             pass
@@ -161,22 +181,59 @@ class Enemy(Entity):
         try:
             self.follow_path(current_map, dt)
         except ValueError:
-            self.state = 'COMPUTE_PATROL'
+            self.switch_state('COMPUTE_PATROL')
+
+    def update_compute_search(self, current_map, dt): 
+
+        rand_x, rand_y =  current_map.nav_mesh.random_tile(self, self.search_range)
+
+        self.is_on_unaccessible_tile, path = current_map.nav_mesh.compute_path(self, (rand_x, rand_y)) 
+        
+        if path:
+            self.current_path = path
+            self.next_position = self.current_path.pop()
+            self.current_objective = (rand_x, rand_y)
+            self.switch_state('SEARCH')
+        else:
+            self.last_path_computation_time = pygame.time.get_ticks()
+            pass
     
+    def update_search(self, current_map, dt):
+        self.current_speed = self.base_speed
+        if pygame.time.get_ticks() - self.search_timer > self.search_duration:
+            self.switch_state('COMPUTE_PATROL')
+        else:    
+            try:
+                self.follow_path(current_map, dt)
+            except ValueError:
+                self.switch_state('COMPUTE_SEARCH')
+
+    def update_kill(self, player, current_map, dt):
+        # insert the animation logic
+
+        player.is_alive = False
     
     def update(self, player, current_map, dt):
         self.current_speed = self.base_speed
         current_time = pygame.time.get_ticks()
 
         print(self.state)
+
+        if (self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.kill_range):
+            self.switch_state('KILL')
+
+        elif (self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.rush_range):
+            self.switch_state('RUSH')
         
-        if (self.state != 'HISS' and self.state != 'CHASE' and self.state != 'COMPUTE_CHASE'
-            and self.can_see_entity(player, current_map)):# and geometry.euclidian_distance_entities(self, player) < self.rush_threshold:
-            self.state = 'HISS'
-            self.hiss_timer = pygame.time.get_ticks()
+        elif (self.state != 'HISS' and self.state != 'CHASE' and self.state != 'COMPUTE_CHASE'
+            and self.can_see_entity(player, current_map)):
+            self.switch_state('HISS')
             
         if self.state == 'HISS':
             self.update_hiss(player, current_map, dt)
+
+        if self.state == 'COMPUTE_CHASE':
+            self.update_compute_chase(player, current_map, dt)
 
         if self.state == 'CHASE':
             self.update_chase(player, current_map, dt)
@@ -190,5 +247,18 @@ class Enemy(Entity):
         if self.state == 'PATROL':
             self.update_patrol(current_map, dt)
 
-        if self.state == 'COMPUTE_CHASE':
-            self.update_compute_chase(player, current_map, dt)
+        if self.state == 'COMPUTE_SEARCH':
+            self.update_compute_search(current_map, dt)
+        
+        if self.state == 'SEARCH':
+            self.update_search(current_map, dt)
+
+        if self.state == 'RUSH':
+            self.update_rush(player, current_map, dt)
+
+        if self.state == 'KILL':
+            self.update_kill(player, current_map, dt)
+
+
+        # additional states to implement : 'SEARCH' after unsuccessful chase, 'ROAM' which is a patrol but picks random close points, 'VENT', 'KILL', 'STANDBY'
+        # also, 'CHASE' currently follows the player, but when losing LoS, should go to last seen position or slightly after
