@@ -1,0 +1,47 @@
+That's a smart move. Using an LLM to build the "boring" utility code, like the wall editor, is a perfect way to save time so you can focus on the core gameplay logic, which is what really matters for a portfolio.
+
+You have a fantastic foundation. The AI, pathfinding, and ray-casting systems are the hardest parts, and you've already built them. To get that Alien Isolation feel and make it a standout portfolio piece, you should focus on features that make the enemy feel less like an algorithm and more like a hunter.
+
+Here are some functionalities you could add, leveraging the systems you already have:
+
+1. 🔊 Make the AI Hunt with Sound (Leverage enemy.py)
+
+The Alien Isolation feel comes from being hunted. Your Enemy AI can see the player (can_see_entity), but what if it could hear them?
+
+    Player Noise Emitter: In player.py's update method, when the player is sprinting (when self.current_speed == self.sprint_speed), create a "sound event" at the player's position.
+
+    Enemy Sound Perception: In enemy.py's update method, add a new check. If the enemy can't see the player, check if it "hears" a sound event.
+
+    AI State: If it hears a sound, it should switch to the FIND state and use your existing A* pathfinding (compute_path) to go investigate the location of the sound, not the player's current position.
+
+This immediately creates a high-stakes stealth mechanic: running is fast, but it's dangerous.
+
+2. 🧠 Give the AI a Memory (Leverage enemy.py)
+
+Right now, if the Enemy sees the player (can_see_entity == True) and the player ducks behind a wall, the enemy instantly "forgets" them or switches to pathfinding to their new, unknown location.
+
+    Last Known Position: When the Enemy loses sight of the player, make it pathfind to the player's last known position.
+
+    Search Behavior: Once it arrives at that last known position, it could pause, "look around" (e.g., do a 360-degree turn), and then switch to a SEARCH state, patrolling a small area around that point before giving up.
+
+This makes the enemy feel much more intelligent and terrifying, as you can't just break line-of-sight to be safe.
+
+3. 📦 Add Hiding & Distraction (Leverage map.py & enemy.py)
+
+You need a way to outsmart the AI, not just run from it.
+
+    Hiding Spots: In your map_wall_editor.py (which is awesome, by the way), you could add a new "hiding spot" object type (like a locker or table).
+
+    New Player State: When the player interacts with one, set player.is_hidden = True.
+
+    AI Blindness: In enemy.py's can_see_entity function, add this check at the very top: if player.is_hidden: return False. This makes the player completely invisible, even if the ray technically hits them.
+
+    Noisemakers: Add a "throw" key for the player. This creates a "sound event" (from suggestion #1) at the crosshair's location, luring the Enemy away.
+
+4. ✨ Polish the Atmosphere (Leverage entity.py & main.py)
+
+Your ray-casting is functional, but you can make it feel better.
+
+    A "Living" Flashlight: Your cast_rays polygon is perfect. In main.py, instead of just drawing the light with a static alpha (100), make that alpha value pulse slightly (e.g., 100 + math.sin(pygame.time.get_ticks() * 0.005) * 10). This makes the light feel dynamic and "alive."
+
+    Ambient Fog: In main.py, instead of a pure black fog_surface, fill it with a very dark, semi-transparent gray (e.g., fog_surface.fill((20, 20, 30)) and fog_surface.set_alpha(200)). This creates a much more atmospheric "fog of war" where you can just make out shapes, adding to the tension.

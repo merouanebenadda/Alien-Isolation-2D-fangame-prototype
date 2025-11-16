@@ -23,9 +23,7 @@ class Entity(pygame.sprite.Sprite):
         x, y = position
         old_x = self.x_pos
         old_y = self.y_pos
-
-        self.current_speed = self.base_speed
-
+        
         if x == self.x_pos and y == self.y_pos:
             return None
 

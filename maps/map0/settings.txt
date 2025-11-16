@@ -1,5 +1,5 @@
 player_spawn: 500, 300
 enemy_spawn: 200, 650
 
-density: 32
-edge_tolerance: 10
+density: 25
+edge_tolerance: 15
