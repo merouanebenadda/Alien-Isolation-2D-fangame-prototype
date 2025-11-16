@@ -1,0 +1,14 @@
+# Audio Files 
+*.mp3
+*.wav
+*.ogg
+
+# Video Files
+*.mp4
+*.mov
+
+# Large Image/Texture Files
+*.jpg
+*.jpeg
+*.png
+*.bmp
