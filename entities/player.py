@@ -33,11 +33,22 @@ class Player(Entity):
         self.mouse_angle = 0
         self.fov_angle = 90
 
+        # Audio logic
+
+        self.is_walking = False
+        self.is_running = False
+
+
+        self.last_step_time = 0
+        self.walk_step_delay = 700
+        self.run_step_delay = 400
 
 
         
 
-    def update(self, is_pressed, current_map, dt):
+    def update(self, is_pressed, current_map, sound_manager, dt):
+        now = pygame.time.get_ticks()
+
         old_x = self.x_pos
         old_y = self.y_pos
 
@@ -45,6 +56,9 @@ class Player(Entity):
         movement_vector_y= 0
 
         self.current_speed = self.base_speed
+
+        self.is_walking = False
+        self.is_running = False
 
         mouse_pos =  pygame.mouse.get_pos()
         self.crosshair_x_pos, self.crosshair_y_pos = mouse_pos
@@ -55,8 +69,6 @@ class Player(Entity):
 
         self.mouse_angle = (arctan2(y_m-y, x_m-x)*180/math.pi)%360 # in [0, 360)
 
-
-        #self.update_vision_cone(mouse_pos, current_map)
 
         if not self.is_alive:
             return
@@ -83,4 +95,12 @@ class Player(Entity):
         norm = math.sqrt(movement_vector_x**2 + movement_vector_y**2)
 
         if norm != 0:
+            self.is_running = self.current_speed == self.sprint_speed
+            self.is_walking = self.current_speed == self.base_speed
+            if self.is_walking and now-self.last_step_time > self.walk_step_delay:
+                self.last_step_time = now
+                sound_manager.play_sfx('step')
+            elif self.is_running and now-self.last_step_time > self.run_step_delay:
+                self.last_step_time = now
+                sound_manager.play_sfx('step')
             super().move(movement_vector_x, movement_vector_y, norm, old_x, old_y, current_map, dt)

@@ -1,6 +1,6 @@
 import sys, pygame
 import gc
-from entities import Player, Enemy
+from entities import Player, Alien
 from environment import Map
 from renderer import GameRenderer, MenuRenderer
 from sound import SoundManager
@@ -34,12 +34,14 @@ def initialize_new_game(screen):
 
     player = Player(current_map.player_spawn)
 
-    enemy = Enemy(current_map.enemy_spawn)
+    enemy = Alien(current_map.enemy_spawn)
 
     return current_map, renderer, player, enemy
 
 def initialize_main_menu():
-    global game_state, renderer, screen
+    global game_state, renderer, screen, sound_manager
+
+    sound_manager.stop_all_audio()
 
     renderer = MenuRenderer(screen)
     sound_manager.play_music("main_menu")
@@ -67,7 +69,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 game_state = "GAME_RUNNING"
-                current_map, renderer, player, enemy = initialize_new_game(screen)
+                current_map, renderer, player, alien = initialize_new_game(screen)
                 
 
             if game_state == 'GAME_RUNNING':
@@ -92,11 +94,11 @@ while running:
     if game_state == 'GAME_RUNNING':
         is_pressed = pygame.key.get_pressed()
 
-        player.update(is_pressed, current_map, dt)
-        enemy.update(player, current_map, dt)
-        
-        renderer.render_game(player, enemy, dt)
-    
+        player.update(is_pressed, current_map, sound_manager, dt)
+        alien.update(player, current_map, sound_manager, dt)
+
+        renderer.render_game(player, alien, dt)
+
     
     pygame.display.flip()
     

@@ -6,7 +6,7 @@ import pygame
 import math
 import sys
 
-class Enemy(Entity):
+class Alien(Entity):
     def __init__(self, x, y=None):
         if y == None: x, y = x
         super().__init__(x, y)
@@ -19,6 +19,7 @@ class Enemy(Entity):
         self.rect.center = (x, y)
         
         # --- Movement and State ---
+        self.current_speed = 0
         self.base_speed = 1
         self.sprint_speed = 4
         self.rush_speed = 9
@@ -47,12 +48,28 @@ class Enemy(Entity):
         self.last_time_seen = 0
         self.follow_after_lost_sight_duration = 1500
 
-    def switch_state(self, state):
+        # Audio logic
+
+        self.is_walking = False
+        self.is_running = False
+
+
+        self.last_step_time = 0
+        self.walk_step_delay = 700
+        self.run_step_delay = 400
+
+    def switch_state(self, state, sound_manager=None):
         current_time = pygame.time.get_ticks()
         if state in ['COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS']:
             self.hiss_timer = current_time
             self.chase_timer = current_time
             self.search_timer = current_time
+            
+        if state == 'KILL':
+            sound_manager.play_sfx('kill')
+
+        if state == 'HISS':
+            sound_manager.play_sfx('hiss')
 
         self.state = state
 
@@ -217,21 +234,25 @@ class Enemy(Entity):
 
         player.is_alive = False
     
-    def update(self, player, current_map, dt):
+    def update(self, player, current_map, sound_manager, dt):
+        old_x = self.x_pos
+        old_y = self.y_pos
+
         self.current_speed = self.base_speed
         current_time = pygame.time.get_ticks()
 
         print(self.state)
 
-        if (self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.kill_range):
-            self.switch_state('KILL')
+        if (self.state != 'KILL' and 
+            self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.kill_range):
+            self.switch_state('KILL', sound_manager)
 
-        elif (self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.rush_range):
+        elif (self.state != 'KILL' and self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.rush_range):
             self.switch_state('RUSH')
         
-        elif (self.state != 'HISS' and self.state != 'CHASE' and self.state != 'COMPUTE_CHASE'
+        elif (self.state != 'KILL' and self.state != 'HISS' and self.state != 'CHASE' and self.state != 'COMPUTE_CHASE'
             and self.can_see_entity(player, current_map)):
-            self.switch_state('HISS')
+            self.switch_state('HISS', sound_manager)
             
         if self.state == 'HISS':
             self.update_hiss(player, current_map, dt)
@@ -262,6 +283,23 @@ class Enemy(Entity):
 
         if self.state == 'KILL':
             self.update_kill(player, current_map, dt)
+
+        
+        if (abs(self.x_pos - old_x) > 0.5 or abs(self.y_pos - old_y) > 0.5):
+            attenuation = 20 * geometry.euclidian_distance_entities(self, player)**-1
+            
+            if self.current_speed >= self.sprint_speed:
+                delay = self.run_step_delay
+                sfx_name = 'alien_step'
+            elif self.current_speed == self.base_speed:
+                delay = self.walk_step_delay
+                sfx_name = 'alien_step'
+            else:
+                return # Not moving
+            
+            if current_time - self.last_step_time > delay:
+                sound_manager.play_sfx(sfx_name, min(attenuation, 1))
+                self.last_step_time = current_time
 
 
         # additional states to implement : 'SEARCH' after unsuccessful chase, 'ROAM' which is a patrol but picks random close points, 'VENT', 'KILL', 'STANDBY'

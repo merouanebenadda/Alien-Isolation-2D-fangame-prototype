@@ -1,6 +1,6 @@
 from .walls import Wall
 from .mesh_loader import generate
-from entities import Player, Enemy
+from entities import Player, Alien
 import pygame
 import os
 import math
