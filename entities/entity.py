@@ -1,6 +1,6 @@
 import pygame
 import math
-from utilities.geometry import intersects, angle
+from utilities.geometry import intersects, angle, angle_entity
 from numpy import cos, sin
 import bisect
 
@@ -147,6 +147,10 @@ class Entity(pygame.sprite.Sprite):
         eps = 1e-1
         delta = (angle - orientation + 180) % 360 - 180
         return abs(delta) <= fov/2 + eps
+    
+    def in_fov_entity(self, entity, current_map):
+        angle = angle_entity(self, entity)
+        return self.in_fov(angle, self.orientation, self.fov) and self.can_see_entity(entity, current_map)
 
     def cast_rays(self, orientation, fov, current_map):
         """
@@ -209,3 +213,12 @@ class Entity(pygame.sprite.Sprite):
             triangles_list.append((pos, corner_angles[i][2], corner_angles[(i+1)%n][2])) # i%n so the last triangle that loops back is included
 
         return triangles_list
+    
+    def fov_rays(self, current_map):
+        right_limit = (self.orientation-self.fov/2)%360
+        left_limit = (self.orientation+self.fov/2)%360
+
+        furthest_right =  self.furthest_point_in_direction((self.x_pos, self.y_pos), right_limit, current_map) # relative_angle, abs_angle, point
+        furthest_left = self.furthest_point_in_direction((self.x_pos, self.y_pos), left_limit, current_map)
+
+        return (furthest_right, furthest_left)

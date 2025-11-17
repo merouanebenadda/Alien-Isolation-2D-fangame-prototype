@@ -54,3 +54,9 @@ def angle(pos1, pos2):
     x2, y2 = pos2
 
     return (arctan2(y2-y1, x2-x1)*180/math.pi)%360 # in [0, 360)
+
+def angle_entity(entity1, entity2):
+    x1, y1 = entity1.x_pos, entity1.y_pos
+    x2, y2 = entity2.x_pos, entity2.y_pos
+
+    return (arctan2(y2-y1, x2-x1)*180/math.pi)%360 # in [0, 360)

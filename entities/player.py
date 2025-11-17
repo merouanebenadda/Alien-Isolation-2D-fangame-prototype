@@ -31,8 +31,8 @@ class Player(Entity):
         self.crosshair_rect = self.crosshair_texture.get_rect()
         self.crosshair_rect.center = (x, y)
 
-        self.mouse_angle = 0
-        self.fov_angle = 90
+        self.orientation = 0
+        self.fov = 90
 
         self.motion_tracker = MotionTracker()
         self.motion_tracker_out = False
@@ -71,7 +71,7 @@ class Player(Entity):
         x_m, y_m = mouse_pos
         x, y = self.x_pos, self.y_pos
 
-        self.mouse_angle = (arctan2(y_m-y, x_m-x)*180/math.pi)%360 # in [0, 360)
+        self.orientation = (arctan2(y_m-y, x_m-x)*180/math.pi)%360 # in [0, 360)
 
         self.motion_tracker.update(self, alien, current_map, sound_manager)
 

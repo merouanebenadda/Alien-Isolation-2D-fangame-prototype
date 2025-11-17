@@ -8,11 +8,11 @@ class GameRenderer():
         self.dark_mode = False
         self.debug_mode = False
 
-    def render_dark_mode(self, player, enemy):
+    def render_dark_mode(self, player, alien):
         light_surface = pygame.Surface(self.map.size, pygame.SRCALPHA)
         light_surface.fill((0, 0, 0)) # Black color
         light_surface.set_colorkey((0, 0, 0))
-        for triangle in player.cast_rays(player.mouse_angle, player.fov_angle, self.map):
+        for triangle in player.cast_rays(player.orientation, player.fov, self.map):
             pygame.draw.polygon(light_surface, (255, 255, 255, 90), triangle)
             
         fog_surface = pygame.Surface(self.map.size)
@@ -24,25 +24,36 @@ class GameRenderer():
 
         self.screen.blit(light_surface, (0, 0))
 
+    def render_fov(self, player):
+        right_ray, left_ray = player.fov_rays(self.map)
+        player_pos = player.x_pos, player.y_pos
 
-    def render_game(self, player, enemy, dt):
+        pygame.draw.aaline(self.screen, (150,150,150), player_pos, right_ray)
+        pygame.draw.aaline(self.screen, (150,150,150), player_pos, left_ray)
+
+
+    def render_game(self, player, alien, dt):
         self.screen.blit(self.map.background, (0, 0))
 
         pygame.mouse.set_visible(False)
 
         self.screen.blit(player.texture, player.rect.topleft)
-        self.screen.blit(enemy.texture, enemy.rect.topleft)
         self.screen.blit(player.crosshair_texture, player.crosshair_rect.topleft)
+        if player.in_fov_entity(alien, self.map):
+            self.screen.blit(alien.texture, alien.rect.topleft)
         if player.motion_tracker.detects_alien:
             self.screen.blit(player.motion_tracker.texture, player.motion_tracker.rect)
         
         if self.dark_mode:
-            self.render_dark_mode(player, enemy)
+            self.render_dark_mode(player, alien)
+
+        else:
+            self.render_fov(player)
 
         if self.debug_mode:
-            self.draw_debug(player, enemy, dt)
+            self.draw_debug(player, alien, dt)
 
-    def draw_debug(self, player, enemy, dt):
+    def draw_debug(self, player, alien, dt):
         # Draw walls
         font = pygame.font.Font(None, 40)
         current_map = self.map
@@ -63,7 +74,7 @@ class GameRenderer():
                 color = (255, 50, 50) if collides else (50, 255, 50)
                 pygame.draw.rect(screen, color, r, 1)
 
-        path = enemy.current_path
+        path = alien.current_path
         if path:
             for k in range(len(path) - 1):
                 p1 = path[k]
@@ -76,7 +87,7 @@ class GameRenderer():
                     3
                 )
 
-        state = enemy.state
+        state = alien.state
         state_surface = font.render(state, True, (255, 0, 0))
         screen.blit(state_surface, (1700, 1040))
 
