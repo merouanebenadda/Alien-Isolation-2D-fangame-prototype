@@ -92,7 +92,7 @@ while running:
     if game_state == 'GAME_RUNNING':
         is_pressed = pygame.key.get_pressed()
 
-        player.update(is_pressed, current_map, sound_manager, dt)
+        player.update(is_pressed, alien, current_map, sound_manager, dt)
         alien.update(player, current_map, sound_manager, dt)
 
         renderer.render_game(player, alien, dt)
