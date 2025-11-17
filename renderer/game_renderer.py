@@ -24,12 +24,12 @@ class GameRenderer():
 
         self.screen.blit(light_surface, (0, 0))
 
-    def render_fov(self, player):
-        right_ray, left_ray = player.fov_rays(self.map)
-        player_pos = player.x_pos, player.y_pos
+    def render_fov(self, entity):
+        right_ray, left_ray = entity.fov_rays(self.map)
+        entity_pos = entity.x_pos, entity.y_pos
 
-        pygame.draw.aaline(self.screen, (150,150,150), player_pos, right_ray)
-        pygame.draw.aaline(self.screen, (150,150,150), player_pos, left_ray)
+        pygame.draw.aaline(self.screen, (150,150,150), entity_pos, right_ray)
+        pygame.draw.aaline(self.screen, (150,150,150), entity_pos, left_ray)
 
 
     def render_game(self, player, alien, dt):
@@ -37,9 +37,12 @@ class GameRenderer():
 
         pygame.mouse.set_visible(False)
 
+        if self.debug_mode:
+            self.draw_debug(player, alien, dt)
+
         self.screen.blit(player.texture, player.rect.topleft)
         self.screen.blit(player.crosshair_texture, player.crosshair_rect.topleft)
-        if player.in_fov_entity(alien, self.map):
+        if player.entity_in_fov(alien, self.map):
             self.screen.blit(alien.texture, alien.rect.topleft)
         if player.motion_tracker.detects_alien:
             self.screen.blit(player.motion_tracker.texture, player.motion_tracker.rect)
@@ -51,7 +54,9 @@ class GameRenderer():
             self.render_fov(player)
 
         if self.debug_mode:
-            self.draw_debug(player, alien, dt)
+            self.screen.blit(alien.texture, alien.rect.topleft)
+            self.render_fov(alien)
+
 
     def draw_debug(self, player, alien, dt):
         # Draw walls
@@ -94,7 +99,7 @@ class GameRenderer():
 
         if self.dark_mode:
             # Debug: highlight triangle corners in cyan
-            for triangle in player.cast_rays(player.mouse_angle, player.fov_angle, current_map):
+            for triangle in player.cast_rays(player.orientation, player.fov, current_map):
                 for vertex in triangle:  # triangle is (pos, corner1, corner2)
                     pygame.draw.circle(screen, (0, 255, 255), (int(vertex[0]), int(vertex[1])), 3)
 

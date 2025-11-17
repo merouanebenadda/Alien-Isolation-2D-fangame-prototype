@@ -1,7 +1,7 @@
 from .entity import Entity
 from .player import Player
 from utilities.mesh import Mesh
-from utilities import geometry
+from utilities.geometry import euclidian_distance, euclidian_distance_entities, angle
 import pygame
 import math
 from random import gauss
@@ -28,6 +28,12 @@ class Alien(Entity):
         self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
         self.rush_threshold = 64
         self.previous_state = None
+
+        self.orientation = 0
+        self.fov = 90
+
+        self.direction_vector_x = 0
+        self.direction_vector_y = 0
         
         # --- Pathfinding and Navigation ---
         self.current_path = None
@@ -47,11 +53,11 @@ class Alien(Entity):
         self.chase_timer = 0
         self.chase_duration = 10000
         self.search_timer = 0
-        self.search_duration = 15000
+        self.search_duration = 25000
         self.look_around_timer = 0
         self.look_around_duration = 0
-        self.look_around_mean = 4000
-        self.look_around_std_dev = 1000
+        self.look_around_mean = 6000
+        self.look_around_std_dev = 3000
         self.last_time_seen = 0
         self.follow_after_lost_sight_duration = 5000
 
@@ -64,6 +70,10 @@ class Alien(Entity):
         self.last_step_time = 0
         self.walk_step_delay = 700
         self.run_step_delay = 400
+
+    def update_orientation(self):
+        if abs(self.direction_vector_x) > 1e-6 or abs(self.direction_vector_y) > 1e-6: 
+            self.orientation = math.atan2(self.direction_vector_y, self.direction_vector_x)*180/math.pi
 
     def switch_state(self, state, sound_manager=None):
         current_time = pygame.time.get_ticks()
@@ -117,34 +127,34 @@ class Alien(Entity):
     def follow_path(self, current_map, dt):
         corner_tolerance = current_map.nav_mesh.density*2*math.sqrt(2) # allows the enemy to cur corners if next way point is under this distance
 
-        if not self.current_path and geometry.euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.ENEMY_SIZE[0]//2:
+        if not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.ENEMY_SIZE[0]//2:
             raise ValueError
         
         if self.is_on_unaccessible_tile:
             while self.current_path and (self.can_see_point(self.current_path[-1], current_map) 
-                                        and geometry.euclidian_distance((self.x_pos, self.y_pos), self.current_path[-1]) < corner_tolerance):
+                                        and euclidian_distance((self.x_pos, self.y_pos), self.current_path[-1]) < corner_tolerance):
                 self.next_position = self.current_path.pop()
         else:
             while self.current_path and ((self.can_see_point(self.current_path[-1], current_map) 
-                                          and geometry.euclidian_distance((self.x_pos, self.y_pos), self.current_path[-1]) < corner_tolerance) 
+                                          and euclidian_distance((self.x_pos, self.y_pos), self.current_path[-1]) < corner_tolerance) 
                                          or (self.can_go_to_point(self.current_path[-1], current_map) 
-                                    and geometry.euclidian_distance((self.x_pos, self.y_pos), self.current_path[-1]) < 100)):
+                                    and euclidian_distance((self.x_pos, self.y_pos), self.current_path[-1]) < 500)):
                 self.next_position = self.current_path.pop()
         
-        if self.current_path and geometry.euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.ENEMY_SIZE[0]//2:
+        if self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.ENEMY_SIZE[0]//2:
             self.next_position = self.current_path.pop()
 
         super().go_to(self.next_position, current_map, dt)
 
     def update_hiss(self, player, current_map, dt):
-        if not self.can_see_entity(player, current_map):
+        if not self.entity_in_fov(player, current_map):
             self.switch_state('COMPUTE_CHASE')
         if pygame.time.get_ticks() - self.hiss_timer > self.hiss_duration:
             self.switch_state('COMPUTE_CHASE')
 
     def update_rush(self, player, current_map, dt):
         self.current_speed = self.rush_speed
-        if self.can_see_entity(player, current_map):
+        if self.entity_in_fov(player, current_map):
             self.rush(player, current_map, dt)
         else:
             self.switch_state('COMPUTE_SEARCH')
@@ -171,10 +181,10 @@ class Alien(Entity):
 
     def update_chase(self, player, current_map, dt):
         self.current_speed = self.sprint_speed
-        if self.can_see_entity(player, current_map) and pygame.time.get_ticks() - self.last_path_computation_time > self.path_computation_refresh:
+        if self.entity_in_fov(player, current_map) and pygame.time.get_ticks() - self.last_path_computation_time > self.path_computation_refresh:
             self.switch_state('COMPUTE_CHASE')
 
-        if self.can_see_entity(player, current_map):
+        if self.entity_in_fov(player, current_map):
             self.last_time_seen = pygame.time.get_ticks()
             try:
                 self.follow_path(current_map, dt)
@@ -258,17 +268,19 @@ class Alien(Entity):
         self.current_speed = self.base_speed
         current_time = pygame.time.get_ticks()
 
+        self.update_orientation()
+
         print(self.state)
 
         if (self.state != 'KILL' and 
-            self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.kill_range):
+            self.entity_in_fov(player, current_map) and euclidian_distance_entities(self, player) < self.kill_range):
             self.switch_state('KILL', sound_manager)
 
-        elif (self.state != 'KILL' and self.can_see_entity(player, current_map) and geometry.euclidian_distance_entities(self, player) < self.rush_range):
+        elif (self.state != 'KILL' and self.entity_in_fov(player, current_map) and euclidian_distance_entities(self, player) < self.rush_range):
             self.switch_state('RUSH')
         
         elif (self.state != 'KILL' and self.state != 'HISS' and self.state != 'CHASE' and self.state != 'COMPUTE_CHASE'
-            and self.can_see_entity(player, current_map)):
+            and self.entity_in_fov(player, current_map)):
             self.switch_state('HISS', sound_manager)
             
         if self.state == 'HISS':
@@ -304,9 +316,10 @@ class Alien(Entity):
         if self.state == 'KILL':
             self.update_kill(player, current_map, dt)
 
+        # SOUND LOGIC
         
         if (abs(self.x_pos - old_x) > 0.5 or abs(self.y_pos - old_y) > 0.5):
-            attenuation = 20 * geometry.euclidian_distance_entities(self, player)**-1
+            attenuation = 150 * euclidian_distance_entities(self, player)**-1
             
             if self.current_speed >= self.sprint_speed:
                 delay = self.run_step_delay
@@ -318,7 +331,7 @@ class Alien(Entity):
                 return # Not moving
             
             if current_time - self.last_step_time > delay:
-                sound_manager.play_sfx(sfx_name, min(attenuation, 1))
+                sound_manager.play_sfx(sfx_name, attenuation)
                 self.last_step_time = current_time
 
 

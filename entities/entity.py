@@ -19,6 +19,9 @@ class Entity(pygame.sprite.Sprite):
         self.sprint_speed = 5
         self.current_speed = self.base_speed
 
+        self.direction_vector_x = 0
+        self.direction_vector_y = 0
+
     def go_to(self, position, current_map, dt):
         x, y = position
         old_x = self.x_pos
@@ -40,12 +43,14 @@ class Entity(pygame.sprite.Sprite):
         self.rect.center = (self.x_pos, self.y_pos)
         dx = self.x_pos - old_x
         self.x_speed = dx/dt
+        self.direction_vector_x = movement_vector_x
         self.resolve_collision_x(current_map, dx)
         
         self.y_pos += movement_vector_y/norm * self.current_speed
         self.rect.center = (self.x_pos, self.y_pos)
         dy = self.y_pos - old_y
         self.y_speed = dy/dt
+        self.direction_vector_y = movement_vector_y
         self.resolve_collision_y(current_map, dy)
 
     def can_see_entity(self, entity, current_map):
@@ -148,7 +153,7 @@ class Entity(pygame.sprite.Sprite):
         delta = (angle - orientation + 180) % 360 - 180
         return abs(delta) <= fov/2 + eps
     
-    def in_fov_entity(self, entity, current_map):
+    def entity_in_fov(self, entity, current_map):
         angle = angle_entity(self, entity)
         return self.in_fov(angle, self.orientation, self.fov) and self.can_see_entity(entity, current_map)
 
