@@ -61,7 +61,7 @@ class MotionTracker():
                 self.last_beep_time = now
 
             delta = radians(alien_angle-look_orientation)
-            self.dot_pos = (-distance/self.max_range*self.display_size[0]*sin(delta) + self.TRACKER_SIZE[0]/2,
+            self.dot_pos = (distance/self.max_range*self.display_size[0]*sin(delta) + self.TRACKER_SIZE[0]/2,
                             -distance/self.max_range*self.display_size[0]*cos(delta) + self.display_size[1] + self.display_pos[1])
             intensity = int(255*exp(-(now%self.blink_decay)/self.blink_speed))
             self.dot_texture.set_alpha(intensity)
