@@ -33,6 +33,8 @@ class GameRenderer():
         self.screen.blit(player.texture, player.rect.topleft)
         self.screen.blit(enemy.texture, enemy.rect.topleft)
         self.screen.blit(player.crosshair_texture, player.crosshair_rect.topleft)
+        if player.motion_tracker.detects_alien:
+            self.screen.blit(player.motion_tracker.texture, player.motion_tracker.rect)
         
         if self.dark_mode:
             self.render_dark_mode(player, enemy)

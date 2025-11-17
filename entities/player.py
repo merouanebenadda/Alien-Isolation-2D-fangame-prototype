@@ -1,4 +1,5 @@
 from .entity import Entity
+from items import MotionTracker
 from numpy import arctan2
 import pygame
 import math
@@ -33,6 +34,8 @@ class Player(Entity):
         self.mouse_angle = 0
         self.fov_angle = 90
 
+        self.motion_tracker = MotionTracker()
+
         # Audio logic
 
         self.is_walking = False
@@ -46,7 +49,7 @@ class Player(Entity):
 
         
 
-    def update(self, is_pressed, current_map, sound_manager, dt):
+    def update(self, is_pressed, alien, current_map, sound_manager, dt):
         now = pygame.time.get_ticks()
 
         old_x = self.x_pos
@@ -68,6 +71,8 @@ class Player(Entity):
         x, y = self.x_pos, self.y_pos
 
         self.mouse_angle = (arctan2(y_m-y, x_m-x)*180/math.pi)%360 # in [0, 360)
+
+        self.motion_tracker.update(self, alien, current_map)
 
 
         if not self.is_alive:

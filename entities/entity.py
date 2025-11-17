@@ -144,7 +144,7 @@ class Entity(pygame.sprite.Sprite):
     
     @staticmethod
     def in_fov(angle, orientation, fov):
-        eps = 100
+        eps = 1e-1
         delta = (angle - orientation + 180) % 360 - 180
         return abs(delta) <= fov/2 + eps
 
