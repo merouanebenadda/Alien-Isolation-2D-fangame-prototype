@@ -12,7 +12,7 @@ class GameRenderer():
         light_surface = pygame.Surface(self.map.size, pygame.SRCALPHA)
         light_surface.fill((0, 0, 0)) # Black color
         light_surface.set_colorkey((0, 0, 0))
-        for triangle in player.cast_rays(player.orientation, player.fov, self.map):
+        for triangle in player.cast_rays(player.look_orientation, player.fov, self.map):
             pygame.draw.polygon(light_surface, (255, 255, 255, 90), triangle)
             
         fog_surface = pygame.Surface(self.map.size)
@@ -99,7 +99,7 @@ class GameRenderer():
 
         if self.dark_mode:
             # Debug: highlight triangle corners in cyan
-            for triangle in player.cast_rays(player.orientation, player.fov, current_map):
+            for triangle in player.cast_rays(player.look_orientation, player.fov, current_map):
                 for vertex in triangle:  # triangle is (pos, corner1, corner2)
                     pygame.draw.circle(screen, (0, 255, 255), (int(vertex[0]), int(vertex[1])), 3)
 

@@ -22,6 +22,11 @@ class Entity(pygame.sprite.Sprite):
         self.direction_vector_x = 0
         self.direction_vector_y = 0
 
+    def update_orientation(self):
+        if abs(self.direction_vector_x) > 1e-6 or abs(self.direction_vector_y) > 1e-6: 
+            self.look_angular_velocity = 0
+            self.orientation = (math.atan2(self.direction_vector_y, self.direction_vector_x)*180/math.pi)%360
+
     def go_to(self, position, current_map, dt):
         x, y = position
         old_x = self.x_pos
@@ -37,6 +42,7 @@ class Entity(pygame.sprite.Sprite):
         
         if norm != 0:
             self.move(movement_vector_x, movement_vector_y, norm, old_x, old_y, current_map, dt)
+            self.update_orientation()
 
     def move(self, movement_vector_x, movement_vector_y, norm, old_x, old_y, current_map, dt):
         self.x_pos += movement_vector_x/norm * self.current_speed
@@ -134,7 +140,7 @@ class Entity(pygame.sprite.Sprite):
     def furthest_point_in_direction(point, angle, current_map):
         x, y = point
         
-        step = 5
+        step = 1
         x += step*cos(angle*math.pi/180)
         y += step*sin(angle*math.pi/180)
 
@@ -155,7 +161,7 @@ class Entity(pygame.sprite.Sprite):
     
     def entity_in_fov(self, entity, current_map):
         angle = angle_entity(self, entity)
-        return self.in_fov(angle, self.orientation, self.fov) and self.can_see_entity(entity, current_map)
+        return self.in_fov(angle, self.look_orientation, self.fov) and self.can_see_entity(entity, current_map)
 
     def cast_rays(self, orientation, fov, current_map):
         """
@@ -220,8 +226,8 @@ class Entity(pygame.sprite.Sprite):
         return triangles_list
     
     def fov_rays(self, current_map):
-        right_limit = (self.orientation-self.fov/2)%360
-        left_limit = (self.orientation+self.fov/2)%360
+        right_limit = (self.look_orientation-self.fov/2)%360
+        left_limit = (self.look_orientation+self.fov/2)%360
 
         furthest_right =  self.furthest_point_in_direction((self.x_pos, self.y_pos), right_limit, current_map) # relative_angle, abs_angle, point
         furthest_left = self.furthest_point_in_direction((self.x_pos, self.y_pos), left_limit, current_map)

@@ -4,7 +4,7 @@ from utilities.mesh import Mesh
 from utilities.geometry import euclidian_distance, euclidian_distance_entities, angle
 import pygame
 import math
-from random import gauss
+from random import gauss, randint
 import sys
 
 class Alien(Entity):
@@ -29,11 +29,15 @@ class Alien(Entity):
         self.rush_threshold = 64
         self.previous_state = None
 
-        self.orientation = 0
+        self.orientation = 0 # the actual orientation of the alien
+        self.look_orientation = 0 # where he actually looks
         self.fov = 90
 
         self.direction_vector_x = 0
         self.direction_vector_y = 0
+
+        self.look_angular_velocity = 0 #in degrees per second
+        self.look_angular_acceleration = 1500 # in degrees/s^2
         
         # --- Pathfinding and Navigation ---
         self.current_path = None
@@ -56,8 +60,12 @@ class Alien(Entity):
         self.search_duration = 25000
         self.look_around_timer = 0
         self.look_around_duration = 0
+        self.look_around_turn_timer = 0
         self.look_around_mean = 6000
-        self.look_around_std_dev = 3000
+        self.look_around_std_dev = 2000
+        self.look_around_turn_delay = 0
+        self.look_around_turn_delay_mean = 1500
+        self.look_around_turn_delay_std_dev = 750
         self.last_time_seen = 0
         self.follow_after_lost_sight_duration = 5000
 
@@ -71,23 +79,42 @@ class Alien(Entity):
         self.walk_step_delay = 700
         self.run_step_delay = 400
 
-    def update_orientation(self):
-        if abs(self.direction_vector_x) > 1e-6 or abs(self.direction_vector_y) > 1e-6: 
-            self.orientation = math.atan2(self.direction_vector_y, self.direction_vector_x)*180/math.pi
+    def update_look_orientation(self, dt):
+        ANGULAR_VELOCITY_CAP = 260
+
+        angle_diff = self.orientation - self.look_orientation
+        angle_diff = (angle_diff + 540)%360 - 180 # normalize the difference to (-180, 180]
+
+        self.look_angular_velocity += self.look_angular_acceleration*dt
+        self.look_angular_velocity = max(self.look_angular_velocity, ANGULAR_VELOCITY_CAP)
+        max_step = self.look_angular_velocity*dt
+
+        if abs(angle_diff) > max_step:
+            if angle_diff > 0:
+                turn = max_step
+            else:
+                turn = -max_step
+        else:
+            turn = angle_diff
+
+        self.look_orientation = (self.look_orientation+turn)%360
 
     def switch_state(self, state, sound_manager=None):
-        current_time = pygame.time.get_ticks()
+        now = pygame.time.get_ticks()
         self.previous_state = self.state
 
         if state in ['COMPUTE_CHASE', 'COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS'] and self.previous_state != 'LOOK_AROUND':
-            self.hiss_timer = current_time
-            self.chase_timer = current_time
-            self.search_timer = current_time
+            self.hiss_timer = now
+            self.search_timer = now
+
+        if state == 'COMPUTE_CHASE' and self.previous_state != 'CHASE':
+            self.chase_timer = now
             
             
         if state == 'LOOK_AROUND':
+            self.look_angular_velocity = 0
             self.look_around_duration = gauss(self.look_around_mean, self.look_around_std_dev)
-            self.look_around_timer = current_time
+            self.look_around_timer = now
 
         if state == 'KILL':
             sound_manager.play_sfx('kill')
@@ -180,28 +207,29 @@ class Alien(Entity):
             pass
 
     def update_chase(self, player, current_map, dt):
+        now = pygame.time.get_ticks()
         self.current_speed = self.sprint_speed
-        if self.entity_in_fov(player, current_map) and pygame.time.get_ticks() - self.last_path_computation_time > self.path_computation_refresh:
+        if self.entity_in_fov(player, current_map) and now - self.last_path_computation_time > self.path_computation_refresh:
             self.switch_state('COMPUTE_CHASE')
 
         if self.entity_in_fov(player, current_map):
-            self.last_time_seen = pygame.time.get_ticks()
+            self.last_time_seen = now
             try:
                 self.follow_path(current_map, dt)
             except ValueError:
                 self.switch_state('COMPUTE_CHASE')
-        elif pygame.time.get_ticks() - self.last_time_seen < self.follow_after_lost_sight_duration:
+        elif now - self.last_time_seen < self.follow_after_lost_sight_duration:
             try:
                 self.follow_path(current_map, dt)
             except ValueError:
                 self.switch_state('COMPUTE_CHASE')
-        elif pygame.time.get_ticks() - self.chase_timer < self.chase_duration:
+        elif now - self.chase_timer < self.chase_duration:
             try:
                 self.follow_path(current_map, dt)
             except ValueError:
-                self.switch_state('COMPUTE_SEARCH')
+                self.switch_state('COMPUTE_CHASE')
         else:
-            if pygame.time.get_ticks() - self.chase_timer > self.chase_duration:
+            if now - self.chase_timer > self.chase_duration:
                 self.switch_state('COMPUTE_SEARCH')
 
     def update_compute_patrol(self, current_map, dt):
@@ -250,7 +278,14 @@ class Alien(Entity):
                 self.switch_state('LOOK_AROUND')
 
     def update_look_around(self):
-        if pygame.time.get_ticks()-self.look_around_timer > self.look_around_duration:
+        now = pygame.time.get_ticks()
+        if now - self.look_around_turn_timer > self.look_around_duration:
+            self.look_around_turn_timer = now
+            self.look_around_turn_duration = gauss(self.look_around_turn_delay_mean, self.look_around_turn_delay_std_dev)
+            self.orientation = randint(0, 359)
+            self.look_angular_velocity = 0
+
+        if now-self.look_around_timer > self.look_around_duration:
             prev_state = self.previous_state
             self.previous_state = 'LOOK_AROUND'
             self.switch_state('COMPUTE_' + prev_state)
@@ -268,7 +303,7 @@ class Alien(Entity):
         self.current_speed = self.base_speed
         current_time = pygame.time.get_ticks()
 
-        self.update_orientation()
+        self.update_look_orientation(dt)
 
         print(self.state)
 

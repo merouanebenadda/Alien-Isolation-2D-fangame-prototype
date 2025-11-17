@@ -51,7 +51,7 @@ class MotionTracker():
         player_pos = player.x_pos, player.y_pos
         alien_pos = alien.x_pos, alien.y_pos
 
-        look_orientation = player.orientation
+        look_orientation = player.look_orientation
         alien_angle = angle(player_pos, alien_pos)
 
         distance = euclidian_distance_entities(player, alien)
