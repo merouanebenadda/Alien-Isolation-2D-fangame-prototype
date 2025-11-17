@@ -72,7 +72,7 @@ class Player(Entity):
 
         self.mouse_angle = (arctan2(y_m-y, x_m-x)*180/math.pi)%360 # in [0, 360)
 
-        self.motion_tracker.update(self, alien, current_map)
+        self.motion_tracker.update(self, alien, current_map, sound_manager)
 
 
         if not self.is_alive:

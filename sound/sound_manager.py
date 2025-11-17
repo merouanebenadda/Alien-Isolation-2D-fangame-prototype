@@ -5,66 +5,41 @@ class SoundManager():
         self.current_music = None
         self.mute = True
         self.sfx = {}
-        self.init_player_sfx()
-        self.init_alien_sfx()
+        self.init_sfx()
 
-    def init_player_sfx(self):
-        # Define the base path where the sound files are located
-        # Adjust 'assets/audio/sfx/player' based on your actual structure
-        SFX_DIR = os.path.join('assets', 'audio', 'sfx', 'player')
+    def init_sfx(self):
+        # Define the base path for all SFX files (e.g., assets/audio/sfx)
+        SFX_BASE_DIR = os.path.join('assets', 'audio', 'sfx')
         
-        # Ensure the directory exists before proceeding
-        if not os.path.isdir(SFX_DIR):
-            print(f"Error: Sound directory not found at {SFX_DIR}")
+        if not os.path.isdir(SFX_BASE_DIR):
+            print(f"Error: Base sound directory not found at {SFX_BASE_DIR}")
             return
 
-        # Iterate through every file in the directory
-        for filename in os.listdir(SFX_DIR):
-            # Check if the file is an audio file (e.g., .wav, .ogg, .mp3)
-            if filename.lower().endswith(('.wav', '.ogg', '.mp3')):
+        # os.walk traverses the entire directory tree (root, dirs, files)
+        for root, dirs, files in os.walk(SFX_BASE_DIR):
+            
+            # 'files' is a list of file names in the current 'root' directory
+            for filename in files:
                 
-                # 1. Create the full file path
-                full_path = os.path.join(SFX_DIR, filename)
-                
-                # 2. Get the sound name without the extension (e.g., 'footstep_walk')
-                sound_name = os.path.splitext(filename)[0]
-                
-                # 3. Load the sound using your existing SoundManager method (self.load_sfx)
-                # You'll need to define self.sfx in your __init__
-                if not hasattr(self, 'sfx'):
-                    self.sfx = {} # Initialize cache if not done in __init__
+                # Check if the file is an audio file
+                if filename.lower().endswith(('.wav', '.ogg', '.mp3')):
                     
-                self.sfx[sound_name] = pygame.mixer.Sound(full_path)
-                print(f"Loaded SFX: {sound_name}")
-
-    def init_alien_sfx(self):
-        # Define the base path where the sound files are located
-        # Adjust 'assets/audio/sfx/player' based on your actual structure
-        SFX_DIR = os.path.join('assets', 'audio', 'sfx', 'alien')
-        
-        # Ensure the directory exists before proceeding
-        if not os.path.isdir(SFX_DIR):
-            print(f"Error: Sound directory not found at {SFX_DIR}")
-            return
-
-        # Iterate through every file in the directory
-        for filename in os.listdir(SFX_DIR):
-            # Check if the file is an audio file (e.g., .wav, .ogg, .mp3)
-            if filename.lower().endswith(('.wav', '.ogg', '.mp3')):
-                
-                # 1. Create the full file path
-                full_path = os.path.join(SFX_DIR, filename)
-                
-                # 2. Get the sound name without the extension (e.g., 'footstep_walk')
-                sound_name = os.path.splitext(filename)[0]
-                
-                # 3. Load the sound using your existing SoundManager method (self.load_sfx)
-                # You'll need to define self.sfx in your __init__
-                if not hasattr(self, 'sfx'):
-                    self.sfx = {} # Initialize cache if not done in __init__
+                    # 1. Create the full file path (e.g., assets/audio/sfx/alien/hiss.wav)
+                    full_path = os.path.join(root, filename)
                     
-                self.sfx[sound_name] = pygame.mixer.Sound(full_path)
-                print(f"Loaded SFX: {sound_name}")
+                    # 2. Get the sound name without the extension (e.g., 'hiss')
+                    sound_name = os.path.splitext(filename)[0]
+                    
+                    # 3. Load and cache the sound
+                    # NOTE: Since the names might repeat (e.g., 'step' in player and alien folders),
+                    # you might want to prepend the folder name for uniqueness:
+                    # sound_name = os.path.basename(root) + '_' + sound_name
+                    
+                    try:
+                        self.sfx[sound_name] = pygame.mixer.Sound(full_path)
+                        print(f"Loaded SFX: {sound_name}")
+                    except pygame.error as e:
+                        print(f"Failed to load {filename}: {e}")
 
 
     def play_music(self, music):
