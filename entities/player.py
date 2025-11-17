@@ -35,6 +35,7 @@ class Player(Entity):
         self.fov_angle = 90
 
         self.motion_tracker = MotionTracker()
+        self.motion_tracker_out = False
 
         # Audio logic
 
