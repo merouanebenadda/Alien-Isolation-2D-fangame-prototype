@@ -9,20 +9,28 @@ import pickle
 DENSITY = 15
 
 class Map():
-    def __init__(self, current_map, screen):
-        self.name = current_map
+    def __init__(self, map_name, width, height, density, edge_tolerance):
+        self.name = map_name
         self.walls = []
-        self.background = pygame.image.load(f'maps/{current_map}/background.png').convert()
-        self.size = screen.get_size()
+        #self.background = pygame.image.load(f'maps/{map_name}/background.png').convert()
+        self.size = width, height
         #self.background = pygame.transform.scale(background, self.size)
-        self.parse_walls()
+        # self.parse_walls()
         self.player_spawn = None 
         self.enemy_spawn = None
-        density, edge_tolerance = self.parse_settings()
-        self.nav_mesh = self.generate_nav_mesh(density, edge_tolerance)
+        self.density, self.edge_tolerance = density, edge_tolerance
+        
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
-        self.wall_corners = self.init_wall_corners()
+        
 
+    def save_map(self):
+        self.nav_mesh = self.generate_nav_mesh(self.density, self.edge_tolerance)
+        self.wall_corners = self.init_wall_corners()
+        self.nav_mesh_walls = self.generate_nav_mesh_walls()
+
+    def load(self):
+        self.parse_settings()
+        self.nav_mesh_walls = self.generate_nav_mesh_walls()
  
     def parse_walls(self):
         with open(f"maps/{self.name}/walls.txt") as file:
@@ -99,7 +107,6 @@ class Map():
             
             self.player_spawn = parsed_data["player_spawn"]
             self.enemy_spawn = parsed_data["enemy_spawn"]
-            return parsed_data["density"], parsed_data["edge_tolerance"]
 
   
     def generate_nav_mesh(self, density, edge_tolerance):

@@ -4,6 +4,7 @@ from entities import Player, Alien
 from environment import Map
 from renderer import GameRenderer, MenuRenderer
 from sound import SoundManager
+import pickle
 
 pygame.init()
 resolution = (1920, 1080)
@@ -17,8 +18,12 @@ sound_manager = SoundManager()
 
 def initialize_new_game(screen):
     sound_manager.stop_music()
-    current_map_name = "map0"
-    current_map = Map(current_map_name, screen)
+    current_map_name = "map2"
+    map_path = 'maps/map2/map.pkl'
+    with open(map_path, 'rb') as f:
+        current_map = pickle.load(f)
+
+    current_map.load()
 
     renderer = GameRenderer(screen, current_map)
 
