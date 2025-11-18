@@ -8,7 +8,7 @@ from sound import SoundManager
 pygame.init()
 resolution = (1920, 1080)
 screen = pygame.display.set_mode(resolution, flags = pygame.FULLSCREEN)
-pygame.display.set_caption("Stalker")
+pygame.display.set_caption("Alien : Isolation 2D (Fan Game)")
 clock = pygame.time.Clock()
 running = True
 game_state = "MAIN_MENU"
@@ -92,7 +92,7 @@ while running:
     if game_state == 'GAME_RUNNING':
         is_pressed = pygame.key.get_pressed()
 
-        player.update(is_pressed, alien, current_map, sound_manager, dt)
+        player.update(is_pressed, renderer.get_absolute_position(pygame.mouse.get_pos()), alien, current_map, sound_manager, dt)
         alien.update(player, current_map, sound_manager, dt)
 
         renderer.render_game(player, alien, dt)

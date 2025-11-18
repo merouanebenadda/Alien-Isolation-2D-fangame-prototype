@@ -17,9 +17,9 @@ class Player(Entity):
         self.is_alive = True
         
 
-        PLAYER_SIZE = (25, 25)
+        self.size = (25, 25)
         player_surface = pygame.image.load('assets/textures/player/blue_dot.png').convert_alpha()
-        self.texture = pygame.transform.scale(player_surface, PLAYER_SIZE)
+        self.texture = pygame.transform.scale(player_surface, self.size)
         self.rect = self.texture.get_rect()
         self.rect.center = (x, y)
 
@@ -50,7 +50,7 @@ class Player(Entity):
 
         
 
-    def update(self, is_pressed, alien, current_map, sound_manager, dt):
+    def update(self, is_pressed, mouse_position, alien, current_map, sound_manager, dt):
         now = pygame.time.get_ticks()
 
         old_x = self.x_pos
@@ -64,11 +64,10 @@ class Player(Entity):
         self.is_walking = False
         self.is_running = False
 
-        mouse_pos =  pygame.mouse.get_pos()
-        self.crosshair_x_pos, self.crosshair_y_pos = mouse_pos
-        self.crosshair_rect.center = mouse_pos
+        self.crosshair_x_pos, self.crosshair_y_pos = mouse_position
+        self.crosshair_rect.center = mouse_position
 
-        x_m, y_m = mouse_pos
+        x_m, y_m = mouse_position
         x, y = self.x_pos, self.y_pos
 
         self.look_orientation = (arctan2(y_m-y, x_m-x)*180/math.pi)%360 # in [0, 360)

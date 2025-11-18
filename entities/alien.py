@@ -13,9 +13,9 @@ class Alien(Entity):
         super().__init__(x, y)
         
         # --- Appearance and Collision ---
-        self.ENEMY_SIZE = (25, 25)
+        self.size = (25, 25)
         enemy_surface = pygame.image.load('assets/textures/enemy/red_dot.png').convert_alpha()
-        self.texture = pygame.transform.scale(enemy_surface, self.ENEMY_SIZE)
+        self.texture = pygame.transform.scale(enemy_surface, self.size)
         self.rect = self.texture.get_rect()
         self.rect.center = (x, y)
         
@@ -45,7 +45,7 @@ class Alien(Entity):
         self.current_objective = None
         self.is_on_unaccessible_tile = None
         self.rush_range = 100
-        self.kill_range = self.ENEMY_SIZE[0]
+        self.kill_range = self.size[0]
         self.patrol_range = (500, 1e9)
         self.search_range = (40, 250)
         
@@ -154,7 +154,7 @@ class Alien(Entity):
     def follow_path(self, current_map, dt):
         corner_tolerance = current_map.nav_mesh.density*2*math.sqrt(2) # allows the enemy to cur corners if next way point is under this distance
 
-        if not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.ENEMY_SIZE[0]//2:
+        if not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
             raise ValueError
         
         if self.is_on_unaccessible_tile:
@@ -168,7 +168,7 @@ class Alien(Entity):
                                     and euclidian_distance((self.x_pos, self.y_pos), self.current_path[-1]) < 500)):
                 self.next_position = self.current_path.pop()
         
-        if self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.ENEMY_SIZE[0]//2:
+        if self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
             self.next_position = self.current_path.pop()
 
         super().go_to(self.next_position, current_map, dt)

@@ -27,6 +27,12 @@ class Entity(pygame.sprite.Sprite):
             self.look_angular_velocity = 0
             self.orientation = (math.atan2(self.direction_vector_y, self.direction_vector_x)*180/math.pi)%360
 
+    def get_absolute_position(self, x, y=None):
+        if y == None:
+            x, y = x
+
+        
+
     def go_to(self, position, current_map, dt):
         x, y = position
         old_x = self.x_pos
