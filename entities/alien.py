@@ -1,3 +1,9 @@
+"""
+
+Notes : 
+- I set corner_tolerance to 0 so the enemy does not get stuck in corners during testing
+"""
+
 from .entity import Entity
 from .player import Player
 from utilities.mesh import Mesh
@@ -30,6 +36,7 @@ class Alien(Entity):
         self.previous_state = None
 
         self.orientation = 0 # the actual orientation of the alien
+        self.look_to = 0 # where the alien should look
         self.look_orientation = 0 # where he actually looks
         self.fov = 90
 
@@ -54,6 +61,10 @@ class Alien(Entity):
         self.path_computation_refresh = 1000 # in ms
         self.hiss_timer = 0
         self.hiss_duration = 2000
+        self.patrol_look_around_timer = 0
+        self.patrol_look_around_duration = 0
+        self.patrol_look_around_mean = 2000
+        self.patrol_look_around_std_dev = 750
         self.chase_timer = 0
         self.chase_duration = 10000
         self.search_timer = 0
@@ -80,9 +91,14 @@ class Alien(Entity):
         self.run_step_delay = 400
 
     def update_look_orientation(self, dt):
+        now = pygame.time.get_ticks()
         ANGULAR_VELOCITY_CAP = 260
 
-        angle_diff = self.orientation - self.look_orientation
+        goal_orientation = self.look_to
+        if now - self.patrol_look_around_timer > self.patrol_look_around_duration:
+            goal_orientation = self.orientation
+
+        angle_diff = goal_orientation - self.look_orientation
         angle_diff = (angle_diff + 540)%360 - 180 # normalize the difference to (-180, 180]
 
         self.look_angular_velocity += self.look_angular_acceleration*dt
@@ -152,7 +168,7 @@ class Alien(Entity):
             return None
 
     def follow_path(self, current_map, dt):
-        corner_tolerance = current_map.nav_mesh.density*2*math.sqrt(2) # allows the enemy to cur corners if next way point is under this distance
+        corner_tolerance = 0 #current_map.nav_mesh.density*2*math.sqrt(2) # allows the enemy to cur corners if next way point is under this distance
 
         if not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
             raise ValueError
@@ -247,7 +263,12 @@ class Alien(Entity):
             pass
 
     def update_patrol(self, current_map, dt):
+        now = pygame.time.get_ticks()
         self.current_speed = self.base_speed
+        if now-self.patrol_look_around_timer > self.patrol_look_around_duration:
+            self.patrol_look_around_duration = gauss(self.patrol_look_around_mean, self.patrol_look_around_std_dev)
+            self.patrol_look_around_timer = now
+            self.look_to = self.orientation +  int(gauss(0, 50))
         try:
             self.follow_path(current_map, dt)
         except ValueError:
@@ -305,8 +326,6 @@ class Alien(Entity):
 
         self.update_look_orientation(dt)
 
-        print(self.state)
-
         if (self.state != 'KILL' and 
             self.entity_in_fov(player, current_map) and euclidian_distance_entities(self, player) < self.kill_range):
             self.switch_state('KILL', sound_manager)
@@ -354,7 +373,7 @@ class Alien(Entity):
         # SOUND LOGIC
         
         if (abs(self.x_pos - old_x) > 0.5 or abs(self.y_pos - old_y) > 0.5):
-            attenuation = 150 * euclidian_distance_entities(self, player)**-1
+            attenuation = 90 * euclidian_distance_entities(self, player)**-1
             
             if self.current_speed >= self.sprint_speed:
                 delay = self.run_step_delay
