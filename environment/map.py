@@ -18,18 +18,21 @@ class Map():
         # self.parse_walls()
         self.player_spawn = None 
         self.enemy_spawn = None
-        self.density, self.edge_tolerance = density, edge_tolerance
+        self.mesh_density, self.edge_tolerance = density, edge_tolerance
         
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
         
 
     def save_map(self):
-        self.nav_mesh = self.generate_nav_mesh(self.density, self.edge_tolerance)
+        self.nav_mesh = self.generate_nav_mesh(self.mesh_density, self.edge_tolerance)
         self.wall_corners = self.init_wall_corners()
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
 
     def load(self):
         self.parse_settings()
+        self.nav_mesh_walls = self.generate_nav_mesh_walls()
+        self.nav_mesh = self.generate_nav_mesh(self.mesh_density, self.edge_tolerance)
+        self.wall_corners = self.init_wall_corners()
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
  
     def parse_walls(self):
@@ -105,6 +108,8 @@ class Map():
                     print(f"Error parsing line : {line}")
                     continue
             
+            self.mesh_density = parsed_data["mesh_density"]
+            self.edge_tolerance = parsed_data["edge_tolerance"]
             self.player_spawn = parsed_data["player_spawn"]
             self.enemy_spawn = parsed_data["enemy_spawn"]
 

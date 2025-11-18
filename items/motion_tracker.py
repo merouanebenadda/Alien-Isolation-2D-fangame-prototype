@@ -5,7 +5,7 @@ from utilities.geometry import angle, euclidian_distance_entities
 class MotionTracker():
     def __init__(self):
         self.min_range = 0
-        self.max_range = 750
+        self.max_range = 1500
         self.fov = 90
         
         self.TRACKER_SIZE = (320, 480)
@@ -68,7 +68,7 @@ class MotionTracker():
             self.texture.blit(self.dot_texture, (self.dot_pos))
             self.detects_alien = True
             self.last_refresh = now
-            if now - self.last_beep_time > self.blink_decay or intensity > 240:
+            if now - self.last_beep_time > self.blink_decay or intensity > 245:
                 self.last_beep_time = now
                 sound_manager.play_sfx('motion_tracker_beep', volume=0.1)
             # self.blink_interval = max(50, 600*distance/self.max_range)

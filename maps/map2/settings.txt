@@ -1,2 +1,5 @@
 player_spawn: 200, 200
 enemy_spawn: 2500, 200
+
+edge_tolerance: 0
+mesh_density: 40
