@@ -10,21 +10,22 @@ class GameRenderer():
         self.debug_mode = False
         self.camera = GameCamera()
 
-    def render_dark_mode(self, player, alien):
-        light_surface = pygame.Surface(self.map.size, pygame.SRCALPHA)
-        light_surface.fill((0, 0, 0)) # Black color
-        light_surface.set_colorkey((0, 0, 0))
-        for triangle in player.cast_rays(player.look_orientation, player.fov, self.map):
-            pygame.draw.polygon(light_surface, (255, 255, 255, 90), triangle)
+    # To be updated
+    # def render_dark_mode(self, player, alien):
+    #     light_surface = pygame.Surface(self.map.size, pygame.SRCALPHA)
+    #     light_surface.fill((0, 0, 0)) # Black color
+    #     light_surface.set_colorkey((0, 0, 0))
+    #     for triangle in player.cast_rays(player.look_orientation, player.fov, self.map):
+    #         pygame.draw.polygon(light_surface, (255, 255, 255, 90), triangle)
             
-        fog_surface = pygame.Surface(self.map.size)
-        fog_surface.fill((0, 0, 0)) # Black color
-        fog_surface.set_alpha(255)
-        fog_surface.blit(light_surface, (0, 0),  special_flags=pygame.BLEND_RGBA_SUB)
-        fog_surface.set_alpha(200)
-        self.screen.blit(fog_surface, (0, 0))
+    #     fog_surface = pygame.Surface(self.map.size)
+    #     fog_surface.fill((0, 0, 0)) # Black color
+    #     fog_surface.set_alpha(255)
+    #     fog_surface.blit(light_surface, (0, 0),  special_flags=pygame.BLEND_RGBA_SUB)
+    #     fog_surface.set_alpha(200)
+    #     self.screen.blit(fog_surface, (0, 0))
 
-        self.screen.blit(light_surface, (0, 0))
+    #     self.screen.blit(light_surface, (0, 0))
 
     def get_absolute_position(self, x, y=None):
         if y == None:
@@ -61,46 +62,21 @@ class GameRenderer():
         pygame.draw.aaline(self.screen, (150,150,150), entity_pos, left_ray)
 
 
-    # def render_game(self, player, alien, dt):
-    #     font = pygame.font.Font(None, 40)
-    #     self.screen.blit(self.map.background, (0, 0))
-
-    #     pygame.mouse.set_visible(False)
-
-    #     if self.debug_mode:
-    #         self.draw_debug(player, alien, dt)
-
-    #     self.screen.blit(player.texture, player.rect.topleft)
-    #     self.screen.blit(player.crosshair_texture, player.crosshair_rect.topleft)
-    #     if player.entity_in_fov(alien, self.map):
-    #         self.screen.blit(alien.texture, alien.rect.topleft)
-    #     if player.motion_tracker.detects_alien:
-    #         self.screen.blit(player.motion_tracker.texture, player.motion_tracker.rect)
-        
-    #     if self.dark_mode:
-    #         self.render_dark_mode(player, alien)
-
-    #     else:
-    #         self.render_fov(player)
-
-    #     if self.debug_mode:
-    #         self.screen.blit(alien.texture, alien.rect.topleft)
-    #         self.render_fov(alien)
-
-    #     if dt != 0:
-    #         fps = str(int(1/dt))
-    #         fps_surface = font.render(fps, True, (0, 255, 0))
-    #         self.screen.blit(fps_surface, (0, 0))
-
     def render_game(self, player, alien, dt):
         font = pygame.font.Font(None, 40)
         self.screen.fill((0, 0, 0))
         self.camera.target_entity = player
 
+        pygame.mouse.set_visible(False)
+
+        if self.debug_mode:
+            self.render_debug(player, alien, dt)
+
         self.camera.update()
 
         self.render_walls()
         self.render_player(player)
+        self.render_crosshair(player)
         self.render_fov(player)
 
         if player.entity_in_fov(alien, self.map):
@@ -109,6 +85,10 @@ class GameRenderer():
 
         if player.motion_tracker.detects_alien:
             self.screen.blit(player.motion_tracker.texture, player.motion_tracker.rect)
+
+        if self.debug_mode:
+            self.render_entity(alien)
+            self.render_fov(alien)
 
         if dt != 0:
             fps = str(int(1/dt))
@@ -129,19 +109,24 @@ class GameRenderer():
         render_pos_x, render_pos_y = render_pos_x/2-sx/2, render_pos_y/2-sy/2
         self.screen.blit(player.texture, (render_pos_x, render_pos_y))
 
+    def render_crosshair(self, player):
+        render_pos_x, render_pos_y = player.crosshair_x_pos, player.crosshair_y_pos
+        sx, sy = player.crosshair_size
+        render_pos_x, render_pos_y = render_pos_x-self.camera.offset_x - sx/2, render_pos_y-self.camera.offset_y - sy/2
+        self.screen.blit(player.crosshair_texture, (render_pos_x, render_pos_y))
+
     def render_entity(self, entity):
         render_pos_x, render_pos_y = entity.x_pos, entity.y_pos
         sx, sy = entity.size
         render_pos_x, render_pos_y = render_pos_x-self.camera.offset_x - sx/2, render_pos_y-self.camera.offset_y - sy/2
         self.screen.blit(entity.texture, (render_pos_x, render_pos_y))
 
-    def draw_debug(self, player, alien, dt):
+    def render_debug(self, player, alien, dt):
         # Draw walls
         font = pygame.font.Font(None, 40)
         current_map = self.map
         screen = self.screen
-        for w in current_map.walls:
-            pygame.draw.rect(screen, (255, 0, 0), w.rect)
+        self.render_walls()
 
         # Draw mesh grid
         mesh_width, mesh_height = current_map.nav_mesh.width, current_map.nav_mesh.height
@@ -150,11 +135,13 @@ class GameRenderer():
             for j in range(mesh_height):
                 eps = current_map.nav_mesh.edge_tolerance
                 r = pygame.Rect(i * density, j * density, density, density)
+                x_screen, y_screen = self.get_screen_position(i * density, j * density)
+                r_screen = pygame.Rect(x_screen, y_screen, density, density)
                 r_inf = pygame.Rect(i * density-eps, j * density-eps, density+2*eps, density+2*eps)
                 # Check collision
                 collides = r_inf.collidelist(current_map.walls) != -1
                 color = (255, 50, 50) if collides else (50, 255, 50)
-                pygame.draw.rect(screen, color, r, 1)
+                pygame.draw.rect(screen, color, r_screen, 1)
 
         path = alien.current_path
         if path:
@@ -164,8 +151,8 @@ class GameRenderer():
                 pygame.draw.line(
                     screen,
                     (0, 150, 255),
-                    (p1[0], p1[1]),
-                    (p2[0], p2[1]),
+                    self.get_screen_position(p1[0], p1[1]),
+                    self.get_screen_position(p2[0], p2[1]),
                     3
                 )
 
@@ -173,12 +160,12 @@ class GameRenderer():
         state_surface = font.render(state, True, (255, 0, 0))
         screen.blit(state_surface, (1700, 1040))
 
-
-        if self.dark_mode:
-            # Debug: highlight triangle corners in cyan
-            for triangle in player.cast_rays(player.look_orientation, player.fov, current_map):
-                for vertex in triangle:  # triangle is (pos, corner1, corner2)
-                    pygame.draw.circle(screen, (0, 255, 255), (int(vertex[0]), int(vertex[1])), 3)
+        # To be updated
+        # if self.dark_mode:
+        #     # Debug: highlight triangle corners in cyan
+        #     for triangle in player.cast_rays(player.look_orientation, player.fov, current_map):
+        #         for vertex in triangle:  # triangle is (pos, corner1, corner2)
+        #             pygame.draw.circle(screen, (0, 255, 255), (int(vertex[0]), int(vertex[1])), 3)
 
 
 

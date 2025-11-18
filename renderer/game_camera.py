@@ -15,7 +15,6 @@ class GameCamera():
 
         self.rect = pygame.rect.Rect(self.offset_x, self.offset_y, self.width, self.height)
 
-        
 
     
     def update(self):

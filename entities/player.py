@@ -23,11 +23,11 @@ class Player(Entity):
         self.rect = self.texture.get_rect()
         self.rect.center = (x, y)
 
-        CROSSHAIR_SIZE = (7, 7)
+        self.crosshair_size = (7, 7)
         self.crosshair_x_pos = x
         self.crosshair_y_pos = y
         crosshair_surface = pygame.image.load('assets/textures/player/crosshair.png')
-        self.crosshair_texture = pygame.transform.scale(crosshair_surface, CROSSHAIR_SIZE)
+        self.crosshair_texture = pygame.transform.scale(crosshair_surface, self.crosshair_size)
         self.crosshair_rect = self.crosshair_texture.get_rect()
         self.crosshair_rect.center = (x, y)
 
