@@ -53,6 +53,9 @@ class Player(Entity):
     def update(self, is_pressed, mouse_position, alien, current_map, sound_manager, dt):
         now = pygame.time.get_ticks()
 
+        if not self.is_alive:
+            return
+
         old_x = self.x_pos
         old_y = self.y_pos
 
@@ -75,8 +78,7 @@ class Player(Entity):
         self.motion_tracker.update(self, alien, current_map, sound_manager)
 
 
-        if not self.is_alive:
-            return
+        
 
         if is_pressed[pygame.K_LSHIFT]:# and self.stamina > 0:
             self.current_speed = self.sprint_speed

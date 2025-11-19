@@ -3,7 +3,7 @@ import os, pygame
 class SoundManager():
     def __init__(self):
         self.current_music = None
-        self.mute = True
+        self.mute = False
         self.sfx = {}
         self.init_sfx()
 

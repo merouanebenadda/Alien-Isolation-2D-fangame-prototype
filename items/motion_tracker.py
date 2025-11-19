@@ -16,7 +16,7 @@ class MotionTracker():
         surface = pygame.image.load((f'assets/textures/items/motion_tracker/dot.png')).convert_alpha()
         self.dot_texture = pygame.transform.scale(surface, self.DOT_SIZE)
         self.dot_pos = None
-        self.blink_decay = 1000
+        self.blink_decay = 4000
         self.blink_speed = 750
         self.last_beep_time = 0
 
@@ -71,7 +71,7 @@ class MotionTracker():
             if now - self.last_beep_time > self.blink_decay or intensity > 245:
                 self.last_beep_time = now
                 sound_manager.play_sfx('motion_tracker_beep', volume=0.1)
-            # self.blink_interval = max(50, 600*distance/self.max_range)
+            # self.blink_decay = max(200, 4000*distance/self.max_range)
         else:
             self.detects_alien = False
 

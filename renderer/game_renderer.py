@@ -65,7 +65,7 @@ class GameRenderer():
 
     def render_game(self, player, alien, dt):
         font = pygame.font.Font(None, 40)
-        self.screen.fill((0, 0, 0))
+        self.screen.fill((100, 100, 100))
         self.camera.target_entity = player
 
         pygame.mouse.set_visible(False)
@@ -75,7 +75,8 @@ class GameRenderer():
 
         self.camera.update()
 
-        self.render_walls()
+        if not self.debug_mode: 
+            self.render_walls()
         self.render_player(player)
         self.render_crosshair(player)
         self.render_fov(player)
@@ -87,7 +88,7 @@ class GameRenderer():
         if player.motion_tracker.detects_alien:
             self.screen.blit(player.motion_tracker.texture, player.motion_tracker.rect)
 
-        if self.debug_mode:
+        if self.debug_mode or not player.is_alive:
             self.render_entity(alien)
             self.render_fov(alien)
 
@@ -196,7 +197,7 @@ class GameRenderer():
                 )
 
         state = alien.state
-        state_surface = font.render(state, True, (255, 0, 0))
+        state_surface = font.render(state, True, (0, 0, 0))
         screen.blit(state_surface, (1700, 1040))
 
         # To be updated

@@ -74,7 +74,7 @@ class Alien(Entity):
         self.last_path_computation_time = 0
         self.path_computation_refresh = 1000 # in ms
         self.hiss_timer = 0
-        self.hiss_duration = 2000
+        self.hiss_duration = 3000
         self.patrol_look_around_timer = 0
         self.patrol_look_around_duration = 0
         self.patrol_look_around_mean = 2000
@@ -340,7 +340,10 @@ class Alien(Entity):
 
         #self.update_textures()
 
-        if (self.state != 'KILL' and 
+        if self.state == 'SEARCH' and self.entity_in_fov(player, current_map):
+            self.switch_state('CHASE', sound_manager)
+
+        elif (self.state != 'KILL' and 
             self.entity_in_fov(player, current_map) and euclidian_distance_entities(self, player) < self.kill_range):
             self.switch_state('KILL', sound_manager)
 
