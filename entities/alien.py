@@ -20,10 +20,22 @@ class Alien(Entity):
         
         # --- Appearance and Collision ---
         self.size = (25, 25)
-        enemy_surface = pygame.image.load('assets/textures/enemy/red_dot.png').convert_alpha()
-        self.texture = pygame.transform.scale(enemy_surface, self.size)
-        self.rect = self.texture.get_rect()
+        self.rect = pygame.rect.Rect(0, 0, self.size[0], self.size[1])
+
+        self.body_size = (50, 50)
+        self.body_surface = pygame.image.load('assets/textures/alien/body.png').convert_alpha()
+        self.body_texture_original = pygame.transform.scale(self.body_surface, self.body_size)
+        self.body_texture = self.body_texture_original
+        self.body_rect = self.body_texture.get_rect()
         self.rect.center = (x, y)
+
+        self.head_size = (36, 10)
+        self.head_pivot = (15, 5)
+        self.head_surface = pygame.image.load('assets/textures/alien/head.png').convert_alpha()
+        self.head_texture_original = pygame.transform.scale(self.head_surface, self.head_size)
+        self.head_texture = self.head_texture_original
+        self.head_rect = self.head_texture.get_rect()
+
         
         # --- Movement and State ---
         self.current_speed = 0
@@ -44,7 +56,9 @@ class Alien(Entity):
         self.direction_vector_y = 0
 
         self.look_angular_velocity = 0 #in degrees per second
-        self.look_angular_acceleration = 1500 # in degrees/s^2
+        self.look_angular_acceleration = 25000 # in degrees/s^2
+
+        self.is_in_frontstage = True
         
         # --- Pathfinding and Navigation ---
         self.current_path = None
@@ -90,9 +104,13 @@ class Alien(Entity):
         self.walk_step_delay = 700
         self.run_step_delay = 400
 
+    def update_textures(self):
+        self.body_texture = pygame.transform.rotate(self.body_texture_original, -self.orientation)
+        self.head_texture = pygame.transform.rotate(self.head_texture_original, -self.look_orientation)
+
     def update_look_orientation(self, dt):
         now = pygame.time.get_ticks()
-        ANGULAR_VELOCITY_CAP = 260
+        ANGULAR_VELOCITY_CAP = 1080
 
         goal_orientation = self.look_to
         if now - self.patrol_look_around_timer > self.patrol_look_around_duration:
@@ -102,7 +120,7 @@ class Alien(Entity):
         angle_diff = (angle_diff + 540)%360 - 180 # normalize the difference to (-180, 180]
 
         self.look_angular_velocity += self.look_angular_acceleration*dt
-        self.look_angular_velocity = max(self.look_angular_velocity, ANGULAR_VELOCITY_CAP)
+        self.look_angular_velocity = min(self.look_angular_velocity, ANGULAR_VELOCITY_CAP)
         max_step = self.look_angular_velocity*dt
 
         if abs(angle_diff) > max_step:
@@ -126,7 +144,6 @@ class Alien(Entity):
         if state == 'COMPUTE_CHASE' and self.previous_state != 'CHASE':
             self.chase_timer = now
             
-            
         if state == 'LOOK_AROUND':
             self.look_angular_velocity = 0
             self.look_around_duration = gauss(self.look_around_mean, self.look_around_std_dev)
@@ -137,6 +154,7 @@ class Alien(Entity):
 
         if state == 'HISS':
             sound_manager.play_sfx('hiss')
+
 
         self.state = state
 
@@ -202,11 +220,6 @@ class Alien(Entity):
         else:
             self.switch_state('COMPUTE_SEARCH')
 
-    def update_finding(self, player, current_map, dt):
-        self.update_path(player, current_map)
-        self.last_path_computation_time = pygame.time.get_ticks()
-        self.switch_state('CHASE')
-
     def update_compute_chase(self, player, current_map, dt):
         self.is_on_unaccessible_tile, path = current_map.nav_mesh.compute_path(self, (player.x_pos, player.y_pos)) 
         
@@ -268,7 +281,7 @@ class Alien(Entity):
         if now-self.patrol_look_around_timer > self.patrol_look_around_duration:
             self.patrol_look_around_duration = gauss(self.patrol_look_around_mean, self.patrol_look_around_std_dev)
             self.patrol_look_around_timer = now
-            self.look_to = self.orientation +  int(gauss(0, 50))
+            self.look_to = self.orientation +  int(gauss(0, 30))
         try:
             self.follow_path(current_map, dt)
         except ValueError:
@@ -310,7 +323,6 @@ class Alien(Entity):
             prev_state = self.previous_state
             self.previous_state = 'LOOK_AROUND'
             self.switch_state('COMPUTE_' + prev_state)
-    
 
     def update_kill(self, player, current_map, dt):
         # insert the animation logic
@@ -325,6 +337,8 @@ class Alien(Entity):
         current_time = pygame.time.get_ticks()
 
         self.update_look_orientation(dt)
+
+        #self.update_textures()
 
         if (self.state != 'KILL' and 
             self.entity_in_fov(player, current_map) and euclidian_distance_entities(self, player) < self.kill_range):
@@ -346,9 +360,6 @@ class Alien(Entity):
         if self.state == 'CHASE':
             self.update_chase(player, current_map, dt)
 
-        if self.state == 'FINDING':
-            self.update_finding(player, current_map, dt)
-
         if self.state == 'COMPUTE_PATROL':
             self.update_compute_patrol(current_map, dt)
 
@@ -367,13 +378,19 @@ class Alien(Entity):
         if self.state == 'RUSH':
             self.update_rush(player, current_map, dt)
 
+        if self.state == 'COMPUTE_VENT_PATROL':
+            self.update_compute_vent_patrol(current_map, dt)
+
+        if self.state == 'VENT_PATROL':
+            self.update_vent_patrol(current_map, dt)
+
         if self.state == 'KILL':
             self.update_kill(player, current_map, dt)
 
         # SOUND LOGIC
         
         if (abs(self.x_pos - old_x) > 0.5 or abs(self.y_pos - old_y) > 0.5):
-            attenuation = 90 * euclidian_distance_entities(self, player)**-1
+            attenuation = 90 * (euclidian_distance_entities(self, player) + 1e-6)**-1
             
             if self.current_speed >= self.sprint_speed:
                 delay = self.run_step_delay

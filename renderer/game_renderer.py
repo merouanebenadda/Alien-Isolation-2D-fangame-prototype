@@ -1,5 +1,6 @@
 import pygame
 from .game_camera import GameCamera
+from math import cos, sin, sqrt, radians
 
 
 class GameRenderer():
@@ -115,11 +116,48 @@ class GameRenderer():
         render_pos_x, render_pos_y = render_pos_x-self.camera.offset_x - sx/2, render_pos_y-self.camera.offset_y - sy/2
         self.screen.blit(player.crosshair_texture, (render_pos_x, render_pos_y))
 
+    def blit_rotate(self, entity, image, pos, originPos, angle):
+        """
+        
+        surf is the target Surface
+        image is the Surface which has to be rotated and blit
+        pos is the position of the pivot on the target Surface surf (relative to the top left of surf)
+        originPos is position of the pivot on the image Surface (relative to the top left of image)
+        angle is the angle of rotation in degrees
+
+        """
+        image_rect = image.get_rect(topleft = (pos[0] - originPos[0], pos[1]-originPos[1]))
+        offset_center_to_pivot = pygame.math.Vector2(pos) - image_rect.center
+        rotated_offset = offset_center_to_pivot.rotate(-angle)
+        rotated_image_center = (pos[0] - rotated_offset.x, pos[1] - rotated_offset.y)
+        rotated_image = pygame.transform.rotate(image, angle)
+        rotated_image_rect = rotated_image.get_rect(center = rotated_image_center)
+        self.screen.blit(rotated_image, rotated_image_rect)
+
     def render_entity(self, entity):
-        render_pos_x, render_pos_y = entity.x_pos, entity.y_pos
-        sx, sy = entity.size
-        render_pos_x, render_pos_y = render_pos_x-self.camera.offset_x - sx/2, render_pos_y-self.camera.offset_y - sy/2
-        self.screen.blit(entity.texture, (render_pos_x, render_pos_y))
+        body_center_screen_x, body_center_screen_y = self.get_screen_position_entity(entity)
+        
+        sx, sy = entity.body_size
+        body_render_pos_x, body_render_pos_y = body_center_screen_x - sx/2, body_center_screen_y - sy/2
+
+        px, py = entity.head_pivot
+
+        rotation_rad = radians(entity.look_orientation)
+        
+        rotated_dx = px * cos(rotation_rad) - py * sin(rotation_rad)
+        rotated_dy = px * sin(rotation_rad) + py * cos(rotation_rad)
+
+        head_center_screen_x = body_center_screen_x + rotated_dx
+        head_center_screen_y = body_center_screen_y + rotated_dy
+
+
+        head_size_x, head_size_y = entity.head_size
+        
+        head_render_pos_x = head_center_screen_x - head_size_x / 2
+        head_render_pos_y = head_center_screen_y - head_size_y / 2
+        
+        self.blit_rotate(entity, entity.body_texture_original, (body_center_screen_x, body_center_screen_y), entity.body_rect.center, -entity.orientation)
+        self.blit_rotate(entity, entity.head_texture_original, (body_center_screen_x, body_center_screen_y), entity.head_pivot, -entity.look_orientation)
 
     def render_debug(self, player, alien, dt):
         # Draw walls
@@ -133,15 +171,16 @@ class GameRenderer():
         density = current_map.nav_mesh.density
         for i in range(mesh_width):
             for j in range(mesh_height):
-                eps = current_map.nav_mesh.edge_tolerance
-                r = pygame.Rect(i * density, j * density, density, density)
-                x_screen, y_screen = self.get_screen_position(i * density, j * density)
-                r_screen = pygame.Rect(x_screen, y_screen, density, density)
-                r_inf = pygame.Rect(i * density-eps, j * density-eps, density+2*eps, density+2*eps)
-                # Check collision
-                collides = r_inf.collidelist(current_map.walls) != -1
-                color = (255, 50, 50) if collides else (50, 255, 50)
-                pygame.draw.rect(screen, color, r_screen, 1)
+                    if pygame.rect.Rect(i * density, j * density, density, density).colliderect(self.camera.rect):
+                        eps = current_map.nav_mesh.edge_tolerance
+                        r = pygame.Rect(i * density, j * density, density, density)
+                        x_screen, y_screen = self.get_screen_position(i * density, j * density)
+                        r_screen = pygame.Rect(x_screen, y_screen, density, density)
+                        r_inf = pygame.Rect(i * density-eps, j * density-eps, density+2*eps, density+2*eps)
+                        # Check collision
+                        collides = r_inf.collidelist(current_map.walls) != -1
+                        color = (255, 50, 50) if collides else (50, 255, 50)
+                        pygame.draw.rect(screen, color, r_screen, 1)
 
         path = alien.current_path
         if path:
