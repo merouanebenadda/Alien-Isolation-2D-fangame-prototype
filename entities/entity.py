@@ -22,16 +22,14 @@ class Entity(pygame.sprite.Sprite):
         self.direction_vector_x = 0
         self.direction_vector_y = 0
 
-    def update_orientation(self):
+    def update_heading_orientation(self):
         if abs(self.direction_vector_x) > 1e-6 or abs(self.direction_vector_y) > 1e-6: 
             self.look_angular_velocity = 0
-            self.orientation = (math.atan2(self.direction_vector_y, self.direction_vector_x)*180/math.pi)%360
+            self.heading_orientation = (math.atan2(self.direction_vector_y, self.direction_vector_x)*180/math.pi)%360
 
     def get_absolute_position(self, x, y=None):
         if y == None:
             x, y = x
-
-        
 
     def go_to(self, position, current_map, dt):
         x, y = position
@@ -48,7 +46,7 @@ class Entity(pygame.sprite.Sprite):
         
         if norm != 0:
             self.move(movement_vector_x, movement_vector_y, norm, old_x, old_y, current_map, dt)
-            self.update_orientation()
+            self.update_heading_orientation()
 
     def move(self, movement_vector_x, movement_vector_y, norm, old_x, old_y, current_map, dt):
         self.x_pos += movement_vector_x/norm * self.current_speed

@@ -7,7 +7,7 @@ Notes :
 from .entity import Entity
 from .player import Player
 from utilities.mesh import Mesh
-from utilities.geometry import euclidian_distance, euclidian_distance_entities, angle
+from utilities.geometry import euclidian_distance, euclidian_distance_entities, angle, angle_entity
 import pygame
 import math
 from random import gauss, randint
@@ -47,6 +47,7 @@ class Alien(Entity):
         self.rush_threshold = 64
         self.previous_state = None
 
+        self.heading_orientation = 0 # where the alien is heading to
         self.orientation = 0 # the actual orientation of the alien
         self.look_to = 0 # where the alien should look
         self.look_orientation = 0 # where he actually looks
@@ -55,8 +56,11 @@ class Alien(Entity):
         self.direction_vector_x = 0
         self.direction_vector_y = 0
 
+        self.body_angular_velocity = 0 #in degrees per second
+        self.body_angular_acceleration = 10000 # in degrees/s^2
+
         self.look_angular_velocity = 0 #in degrees per second
-        self.look_angular_acceleration = 25000 # in degrees/s^2
+        self.look_angular_acceleration = 50000 # in degrees/s^2
 
         self.is_in_frontstage = True
         
@@ -108,16 +112,21 @@ class Alien(Entity):
         self.body_texture = pygame.transform.rotate(self.body_texture_original, -self.orientation)
         self.head_texture = pygame.transform.rotate(self.head_texture_original, -self.look_orientation)
 
-    def update_look_orientation(self, dt):
+    def update_look_orientation(self, player, current_map, dt):
         now = pygame.time.get_ticks()
-        ANGULAR_VELOCITY_CAP = 1080
+        ANGULAR_VELOCITY_CAP = 10800
 
         goal_orientation = self.look_to
-        if now - self.patrol_look_around_timer > self.patrol_look_around_duration:
+        if self.state == 'PATROL' and now - self.patrol_look_around_timer > self.patrol_look_around_duration:
             goal_orientation = self.orientation
+        if self.can_see_entity(player, current_map):
+            self.look_to = angle_entity(self, player)
 
         angle_diff = goal_orientation - self.look_orientation
         angle_diff = (angle_diff + 540)%360 - 180 # normalize the difference to (-180, 180]
+
+        if abs(angle_diff) < 1e-1:
+            self.look_angular_velocity = 0
 
         self.look_angular_velocity += self.look_angular_acceleration*dt
         self.look_angular_velocity = min(self.look_angular_velocity, ANGULAR_VELOCITY_CAP)
@@ -132,6 +141,35 @@ class Alien(Entity):
             turn = angle_diff
 
         self.look_orientation = (self.look_orientation+turn)%360
+
+    def update_orientation(self, player, current_map, dt):
+        now = pygame.time.get_ticks()
+        ANGULAR_VELOCITY_CAP = 180
+
+        goal_orientation = self.heading_orientation
+
+        angle_diff = goal_orientation - self.orientation
+        angle_diff = (angle_diff + 540)%360 - 180 # normalize the difference to (-180, 180]
+
+        if abs(angle_diff) < 1e-1:
+            self.body_angular_velocity = 0
+
+        if self.can_see_entity(player, current_map):
+            self.heading_orientation = angle_entity(self, player)
+
+        self.body_angular_velocity += self.body_angular_acceleration*dt
+        self.body_angular_velocity = min(self.body_angular_velocity, ANGULAR_VELOCITY_CAP)
+        max_step = self.body_angular_velocity*dt
+
+        if abs(angle_diff) > max_step:
+            if angle_diff > 0:
+                turn = max_step
+            else:
+                turn = -max_step
+        else:
+            turn = angle_diff
+
+        self.orientation = (self.orientation+turn)%360
 
     def switch_state(self, state, sound_manager=None):
         now = pygame.time.get_ticks()
@@ -281,7 +319,7 @@ class Alien(Entity):
         if now-self.patrol_look_around_timer > self.patrol_look_around_duration:
             self.patrol_look_around_duration = gauss(self.patrol_look_around_mean, self.patrol_look_around_std_dev)
             self.patrol_look_around_timer = now
-            self.look_to = self.orientation +  int(gauss(0, 30))
+            self.look_to = self.heading_orientation +  int(gauss(0, 30))
         try:
             self.follow_path(current_map, dt)
         except ValueError:
@@ -316,8 +354,8 @@ class Alien(Entity):
         if now - self.look_around_turn_timer > self.look_around_duration:
             self.look_around_turn_timer = now
             self.look_around_turn_duration = gauss(self.look_around_turn_delay_mean, self.look_around_turn_delay_std_dev)
-            self.orientation = randint(0, 359)
-            self.look_angular_velocity = 0
+            self.look_to = randint(0, 359)
+            self.heading_orientation = self.look_to
 
         if now-self.look_around_timer > self.look_around_duration:
             prev_state = self.previous_state
@@ -336,7 +374,11 @@ class Alien(Entity):
         self.current_speed = self.base_speed
         current_time = pygame.time.get_ticks()
 
-        self.update_look_orientation(dt)
+        print("body : ", self.body_angular_velocity)
+        print("head : ", self.look_angular_velocity)
+
+        self.update_orientation(player, current_map, dt)
+        self.update_look_orientation(player, current_map, dt)
 
         #self.update_textures()
 
