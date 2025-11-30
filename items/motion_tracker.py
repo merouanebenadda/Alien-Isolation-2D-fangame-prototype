@@ -57,8 +57,6 @@ class MotionTracker():
         distance = euclidian_distance_entities(player, alien)
 
         if self.in_fov(alien_angle, look_orientation) and distance  < self.max_range:
-            if not self.detects_alien:
-                self.last_beep_time = now
 
             delta = radians(alien_angle-look_orientation)
             self.dot_pos = (distance/self.max_range*self.display_size[0]*sin(delta) + self.TRACKER_SIZE[0]/2,
@@ -68,7 +66,7 @@ class MotionTracker():
             self.texture.blit(self.dot_texture, (self.dot_pos))
             self.detects_alien = True
             self.last_refresh = now
-            if now - self.last_beep_time > self.blink_decay or intensity > 245:
+            if now - self.last_beep_time > self.blink_decay:
                 self.last_beep_time = now
                 sound_manager.play_sfx('motion_tracker_beep', volume=0.1)
             # self.blink_decay = max(200, 4000*distance/self.max_range)
