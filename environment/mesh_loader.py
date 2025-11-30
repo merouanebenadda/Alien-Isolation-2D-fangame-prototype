@@ -1,6 +1,6 @@
 import pygame
 from math import sqrt
-from utilities.mesh import Mesh
+from utilities.mesh import NavMesh, VentMesh
 
 
 def generate(size, walls, density, edge_tolerance):
@@ -11,7 +11,7 @@ def generate(size, walls, density, edge_tolerance):
 
     mesh_size = mesh_width*mesh_height
 
-    mesh = Mesh(mesh_size, mesh_width, mesh_height, density, edge_tolerance)
+    mesh = NavMesh(mesh_size, mesh_width, mesh_height, density, edge_tolerance)
     mesh.adjacency_map = {(i, j): [] for i in range(mesh_width) for j in range(mesh_height)}
 
     for i in range(mesh_width):

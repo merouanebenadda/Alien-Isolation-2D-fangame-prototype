@@ -20,17 +20,18 @@ class Map():
         self.enemy_spawn = None
         self.mesh_density, self.edge_tolerance = density, edge_tolerance
         
-        self.nav_mesh_walls = self.generate_nav_mesh_walls()
-        self.vents_mesh = {}
+        self.vents_mesh = self.parse_mesh() # keys: coordinates of nodes, values: list of connected nodes (i, j)
+        self.vents_access_points = [] # list of (x, y) positions of vent access points
         
 
     def save_map(self):
         self.nav_mesh = self.generate_nav_mesh(self.mesh_density, self.edge_tolerance)
         self.wall_corners = self.init_wall_corners()
-        self.nav_mesh_walls = self.generate_nav_mesh_walls()
 
     def load(self):
         self.parse_settings()
+        self.vents_mesh = self.parse_mesh() # keys: coordinates of nodes, values: list of connected nodes (i, j)
+        self.vents_access_points = [] # list of (x, y) positions of vent access points
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
         self.nav_mesh = self.generate_nav_mesh(self.mesh_density, self.edge_tolerance)
         self.wall_corners = self.init_wall_corners()
@@ -101,6 +102,8 @@ class Map():
                     key, item = line.split(':')
                     key = key.strip()
                     values = list(map(int, item.split(',')))
+                    if key == "vent_access_points" or key == "vent_nodes":
+                        parsed_data[key] = values
                     if len(values) == 1:
                         parsed_data[key] = values[0]
                     else:

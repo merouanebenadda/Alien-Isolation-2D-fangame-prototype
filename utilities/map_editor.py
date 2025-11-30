@@ -34,11 +34,11 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 1920, 1080
 FPS = 60
 
 # Map Settings
-MAP_NAME = "map2"
-MAP_WIDTH, MAP_HEIGHT = 3000, 3000 # Example large map size
+MAP_NAME = "map4"
+MAP_WIDTH, MAP_HEIGHT = 750, 750 # Example large map size
 MESH_DENSITY = 40
 EDGE_TOLERANCE = 0
-OUTPUT_FILE = "maps/map2/map.pkl"
+OUTPUT_FILE = "maps/map4/map.pkl"
 
 # Colors
 COLOR_BG = (30, 30, 30)
@@ -69,7 +69,7 @@ current_rect = None
 
 # Load the alien texture
 size = (25, 25)
-enemy_surface = pygame.image.load('assets/textures/enemy/red_dot.png').convert_alpha()
+enemy_surface = pygame.image.load('assets/textures/alien/red_dot.png').convert_alpha()
 texture = pygame.transform.scale(enemy_surface, size)
 
 # --- Helper Functions ---

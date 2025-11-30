@@ -18,8 +18,8 @@ sound_manager = SoundManager()
 
 def initialize_new_game(screen):
     sound_manager.stop_music()
-    current_map_name = "map2"
-    map_path = 'maps/map2/map.pkl'
+    current_map_name = "map4"
+    map_path = f'maps/{current_map_name}/map.pkl'
     with open(map_path, 'rb') as f:
         current_map = pickle.load(f)
 

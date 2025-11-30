@@ -65,7 +65,7 @@ class Alien(Entity):
         self.is_in_frontstage = True
         
         # --- Pathfinding and Navigation ---
-        self.current_path = None
+        self.current_path = None # list of (x, y) positions
         self.next_position = None
         self.current_objective = None
         self.is_on_unaccessible_tile = None
@@ -195,6 +195,8 @@ class Alien(Entity):
         if state == 'HISS':
             sound_manager.play_sfx('hiss')
 
+        if state == 'ENTER_VENT' or state == 'EXIT_VENT':
+            self.is_in_frontstage = not self.is_in_frontstage
 
         self.state = state
 
@@ -245,6 +247,13 @@ class Alien(Entity):
         if self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
             self.next_position = self.current_path.pop()
 
+        super().go_to(self.next_position, current_map, dt)
+
+    def follow_vent_path(self, current_map, dt):
+        if not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
+            raise ValueError
+        if self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
+            self.next_position = self.current_path.pop()
         super().go_to(self.next_position, current_map, dt)
 
     def update_hiss(self, player, current_map, dt):
@@ -350,6 +359,28 @@ class Alien(Entity):
                 self.follow_path(current_map, dt)
             except ValueError:
                 self.switch_state('LOOK_AROUND')
+
+    def update_compute_vent_path(self, current_map, dt):
+        rand_x, rand_y =  current_map.random_point()
+
+        self.is_on_unaccessible_tile, path = current_map.vent_mesh.compute_path(self, (rand_x, rand_y)) 
+        
+        if path:
+            self.current_path = path
+            self.next_position = self.current_path.pop()
+            self.current_objective = (rand_x, rand_y)
+            self.switch_state('VENT_PATROL')
+        else:
+            self.last_path_computation_time = pygame.time.get_ticks()
+            pass
+
+    def update_vent_patrol(self, current_map, dt):
+        now = pygame.time.get_ticks()
+        self.current_speed = self.base_speed
+        try:
+            self.follow_path(current_map, dt)
+        except ValueError:
+            self.switch_state('COMPUTE_VENT_PATROL')
 
     def update_look_around(self):
         now = pygame.time.get_ticks()

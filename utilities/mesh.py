@@ -4,12 +4,11 @@ import pygame
 import random as rd
 
 class Mesh():
-    def __init__(self, size, width, height, density, edge_tolerance):
+    def __init__(self, size, width, height, density):
         self.size = size
         self.width = width
         self.height = height
         self.density = density
-        self.edge_tolerance = edge_tolerance
         self.adjacency_map = {}
 
     def random_tile(self, enemy, range): # /!\ has to be optimized, especially for bigger maps
@@ -28,9 +27,6 @@ class Mesh():
             rand_x, rand_y = self.position(rand_i, rand_j)
 
         return rand_x, rand_y
-
-        
-
 
     def nearest_node(self, pos):
         """
@@ -99,8 +95,6 @@ class Mesh():
 
         return None
         
-
-
     def compute_path(self, entity1, pos):
         start = self.nearest_node((entity1.x_pos, entity1.y_pos))
         end = self.nearest_node(pos)
@@ -125,3 +119,13 @@ class Mesh():
         i = max(0, i*density - edge_tolerance)
         j = max(0, j*density - edge_tolerance)
         return pygame.Rect(i, j, density + 2*edge_tolerance, density+ 2*edge_tolerance)
+    
+
+class NavMesh(Mesh):
+    def __init__(self, size, width, height, density, edge_tolerance):
+        super().__init__(size, width, height, density)
+        self.edge_tolerance = edge_tolerance
+
+class VentMesh(Mesh):
+    def __init__(self, size, width, height, density, edge_tolerance):
+        super().__init__(size, width, height, density, edge_tolerance)
