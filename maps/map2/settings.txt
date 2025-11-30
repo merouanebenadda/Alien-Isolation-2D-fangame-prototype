@@ -1,4 +1,4 @@
-player_spawn: 2000, 200
+player_spawn: 1000, 400
 enemy_spawn: 2500, 200
 
 edge_tolerance: 0

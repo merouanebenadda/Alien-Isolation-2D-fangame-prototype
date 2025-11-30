@@ -119,7 +119,7 @@ class Alien(Entity):
         goal_orientation = self.look_to
         if self.state == 'PATROL' and now - self.patrol_look_around_timer > self.patrol_look_around_duration:
             goal_orientation = self.orientation
-        if self.can_see_entity(player, current_map):
+        if self.entity_in_fov(player, current_map):
             self.look_to = angle_entity(self, player)
 
         angle_diff = goal_orientation - self.look_orientation
@@ -154,7 +154,7 @@ class Alien(Entity):
         if abs(angle_diff) < 1e-1:
             self.body_angular_velocity = 0
 
-        if self.can_see_entity(player, current_map):
+        if self.entity_in_fov(player, current_map):
             self.heading_orientation = angle_entity(self, player)
 
         self.body_angular_velocity += self.body_angular_acceleration*dt
@@ -373,9 +373,6 @@ class Alien(Entity):
 
         self.current_speed = self.base_speed
         current_time = pygame.time.get_ticks()
-
-        print("body : ", self.body_angular_velocity)
-        print("head : ", self.look_angular_velocity)
 
         self.update_orientation(player, current_map, dt)
         self.update_look_orientation(player, current_map, dt)

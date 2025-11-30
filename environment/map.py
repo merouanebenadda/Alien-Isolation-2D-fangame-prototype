@@ -21,6 +21,7 @@ class Map():
         self.mesh_density, self.edge_tolerance = density, edge_tolerance
         
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
+        self.vents_mesh = {}
         
 
     def save_map(self):
