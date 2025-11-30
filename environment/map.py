@@ -19,10 +19,8 @@ class Map():
         self.player_spawn = None 
         self.enemy_spawn = None
         self.mesh_density, self.edge_tolerance = density, edge_tolerance
-        
-        self.vents_mesh = self.parse_mesh() # keys: coordinates of nodes, values: list of connected nodes (i, j)
+        self.vents_mesh = {} # keys: coordinates of nodes, values: list of connected nodes (i, j)
         self.vents_access_points = [] # list of (x, y) positions of vent access points
-        
 
     def save_map(self):
         self.nav_mesh = self.generate_nav_mesh(self.mesh_density, self.edge_tolerance)
@@ -30,8 +28,6 @@ class Map():
 
     def load(self):
         self.parse_settings()
-        self.vents_mesh = self.parse_mesh() # keys: coordinates of nodes, values: list of connected nodes (i, j)
-        self.vents_access_points = [] # list of (x, y) positions of vent access points
         self.nav_mesh_walls = self.generate_nav_mesh_walls()
         self.nav_mesh = self.generate_nav_mesh(self.mesh_density, self.edge_tolerance)
         self.wall_corners = self.init_wall_corners()
