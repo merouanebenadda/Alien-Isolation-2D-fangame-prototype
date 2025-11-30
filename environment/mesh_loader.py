@@ -6,8 +6,8 @@ from utilities.mesh import NavMesh, VentMesh
 def generate(size, walls, density, edge_tolerance):
     map_width, map_height = size
 
-    mesh_width = map_width//density
-    mesh_height = map_height//density
+    mesh_width = map_width//density +1 
+    mesh_height = map_height//density + 1
 
     mesh_size = mesh_width*mesh_height
 

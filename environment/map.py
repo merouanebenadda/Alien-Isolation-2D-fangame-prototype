@@ -1,5 +1,6 @@
 from .walls import Wall
 from .mesh_loader import generate
+from utilities.mesh import NavMesh, VentMesh
 from entities import Player, Alien
 import pygame
 import os
@@ -19,8 +20,10 @@ class Map():
         self.player_spawn = None 
         self.enemy_spawn = None
         self.mesh_density, self.edge_tolerance = density, edge_tolerance
-        self.vents_mesh = {} # keys: coordinates of nodes, values: list of connected nodes (i, j)
-        self.vents_access_points = [] # list of (x, y) positions of vent access points
+        self.vents_mesh = VentMesh(self.size, width//density, height//density, density)
+        self.nav_mesh = None
+        self.nav_mesh_walls = []
+        self.wall_corners = {}
 
     def save_map(self):
         self.nav_mesh = self.generate_nav_mesh(self.mesh_density, self.edge_tolerance)
@@ -98,8 +101,6 @@ class Map():
                     key, item = line.split(':')
                     key = key.strip()
                     values = list(map(int, item.split(',')))
-                    if key == "vent_access_points" or key == "vent_nodes":
-                        parsed_data[key] = values
                     if len(values) == 1:
                         parsed_data[key] = values[0]
                     else:

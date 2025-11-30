@@ -21,6 +21,8 @@ class Entity(pygame.sprite.Sprite):
 
         self.direction_vector_x = 0
         self.direction_vector_y = 0
+        
+        self.is_in_frontstage = True
 
     def update_heading_orientation(self):
         if abs(self.direction_vector_x) > 1e-6 or abs(self.direction_vector_y) > 1e-6: 
@@ -115,6 +117,9 @@ class Entity(pygame.sprite.Sprite):
         return True
     
     def resolve_collision_x(self, current_map, dx):
+        if not self.is_in_frontstage: 
+            return
+
         for wall in current_map.walls:
             if wall.rect.colliderect(self.rect):
                 if dx < 0 and self.rect.left < wall.rect.right:
@@ -127,6 +132,9 @@ class Entity(pygame.sprite.Sprite):
                 self.x_pos, self.y_pos = self.rect.center
 
     def resolve_collision_y(self, current_map, dy):
+        if not self.is_in_frontstage: 
+            return
+        
         for wall in current_map.walls:
             if wall.rect.colliderect(self.rect):
                 if dy < 0 and self.rect.top < wall.rect.bottom:
@@ -164,6 +172,9 @@ class Entity(pygame.sprite.Sprite):
         return abs(delta) <= fov/2 + eps
     
     def entity_in_fov(self, entity, current_map):
+        if not self.is_in_frontstage:
+            return False
+        
         angle = angle_entity(self, entity)
         return self.in_fov(angle, self.look_orientation, self.fov) and self.can_see_entity(entity, current_map)
 

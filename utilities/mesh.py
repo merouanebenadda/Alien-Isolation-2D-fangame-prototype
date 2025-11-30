@@ -28,14 +28,15 @@ class Mesh():
 
         return rand_x, rand_y
 
-    def nearest_node(self, pos):
+    def nearest_node(self, pos_x, pos_y=None):
         """
         Converts the entity's continuous pixel position (x_pos, y_pos) 
         into discrete grid coordinates (i, j).
         """
         # Calculate the grid column (i) and row (j) using integer division
         # This gives the floor of the division, which is the correct tile index.
-        pos_x, pos_y = pos
+        if pos_y==None:
+            pos_x, pos_y = pos_x
         
         i = int(pos_x // self.density)
         j = int(pos_y // self.density)
@@ -95,6 +96,19 @@ class Mesh():
 
         return None
         
+    def rect(self, i, j, density_opt=None):
+        density = self.density if density_opt == None else density_opt
+        edge_tolerance = self.edge_tolerance
+        i = max(0, i*density - edge_tolerance)
+        j = max(0, j*density - edge_tolerance)
+        return pygame.Rect(i, j, density + 2*edge_tolerance, density+ 2*edge_tolerance)
+    
+
+class NavMesh(Mesh):
+    def __init__(self, size, width, height, density, edge_tolerance):
+        super().__init__(size, width, height, density)
+        self.edge_tolerance = edge_tolerance
+
     def compute_path(self, entity1, pos):
         start = self.nearest_node((entity1.x_pos, entity1.y_pos))
         end = self.nearest_node(pos)
@@ -112,20 +126,72 @@ class Mesh():
             return is_on_unaccessible_tile, list(map(lambda node: self.position(node[0], node[1]), path))
         else:
             return is_on_unaccessible_tile, None
-        
-    def rect(self, i, j, density_opt=None):
-        density = self.density if density_opt == None else density_opt
-        edge_tolerance = self.edge_tolerance
-        i = max(0, i*density - edge_tolerance)
-        j = max(0, j*density - edge_tolerance)
-        return pygame.Rect(i, j, density + 2*edge_tolerance, density+ 2*edge_tolerance)
-    
-
-class NavMesh(Mesh):
-    def __init__(self, size, width, height, density, edge_tolerance):
-        super().__init__(size, width, height, density)
-        self.edge_tolerance = edge_tolerance
 
 class VentMesh(Mesh):
-    def __init__(self, size, width, height, density, edge_tolerance):
-        super().__init__(size, width, height, density, edge_tolerance)
+    def __init__(self, size, width, height, density):
+        super().__init__(size, width, height, density)
+        self.nodes = {} # keys: coordinates of nodes, values: list of connected nodes (i, j)
+        self.access_points = [] # list of (x, y) positions of vent access points
+        self.exits = []
+
+    def compute_path(self, entity1, point):
+        path_start = self.get_closest_vent_node(self.nearest_node(entity1.x_pos, entity1.y_pos))
+        path_end = self.get_closest_vent_node(self.nearest_node(point))
+
+        path = A_star(path_start, path_end, self)
+        if path != None: 
+            return [point] + list(map(lambda node: self.position(node[0], node[1]), path))
+        else:
+            return None
+        
+    def get_closest_vent_node(self, i, j=None):
+        """
+        Finds the nearest valid vent node (key in adjacency_map) to the given 
+        grid index (i, j).
+        """
+        if j == None:
+            i, j = i
+
+        if not self.adjacency_map:
+            return None
+        
+        current_best_node = None
+        min_dist_sq = float('inf')
+
+        start_node = (i, j)
+        
+        # Iterate over all defined vent nodes
+        for node in self.adjacency_map.keys():
+            # Calculate squared Euclidean distance in grid space
+            dist_sq = (node[0] - start_node[0])**2 + (node[1] - start_node[1])**2
+            
+            if dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+                current_best_node = node
+                
+        return current_best_node
+
+    def random_point(self):
+        """Returns a random coordinate (x, y) situated exactly on a vent line."""
+        if not self.adjacency_map:
+            return None
+
+        # 1. Pick a random starting node
+        node_start = rd.choice(list(self.adjacency_map.keys()))
+        
+        # 2. Pick a random connected neighbor
+        if not self.adjacency_map[node_start]:
+            return self.position(*node_start) # It's a dead end, stay at node
+            
+        node_end, _ = rd.choice(self.adjacency_map[node_start])
+
+        # 3. Interpolate
+        start_pos = self.position(*node_start)
+        end_pos = self.position(*node_end)
+        
+        t = rd.uniform(0, 1) # Random factor
+        
+        rx = start_pos[0] + t * (end_pos[0] - start_pos[0])
+        ry = start_pos[1] + t * (end_pos[1] - start_pos[1])
+        
+        return rx, ry

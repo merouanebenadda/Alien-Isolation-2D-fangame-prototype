@@ -81,7 +81,7 @@ class GameRenderer():
         self.render_crosshair(player)
         self.render_fov(player)
 
-        if player.entity_in_fov(alien, self.map):
+        if player.entity_in_fov(alien, self.map) and alien.is_in_frontstage:
             self.render_entity(alien)
             self.render_fov(alien)
 
@@ -136,6 +136,7 @@ class GameRenderer():
         self.screen.blit(rotated_image, rotated_image_rect)
 
     def render_entity(self, entity):
+
         body_center_screen_x, body_center_screen_y = self.get_screen_position_entity(entity)
         
         # sx, sy = entity.body_size
@@ -195,6 +196,10 @@ class GameRenderer():
                     self.get_screen_position(p2[0], p2[1]),
                     3
                 )
+
+        if alien.current_objective != None:
+            obj_x, obj_y = alien.current_objective
+            pygame.draw.circle(screen, (255, 255, 0), self.get_screen_position((obj_x, obj_y)), 10)
 
         state = alien.state
         state_surface = font.render(state, True, (0, 0, 0))

@@ -1,8 +1,5 @@
 player_spawn: 50, 50
-enemy_spawn: 725, 725
+enemy_spawn: 225, 325
 
 edge_tolerance: 0
 mesh_density: 40
-
-vent_nodes:
-vent_access_points:

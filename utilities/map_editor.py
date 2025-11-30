@@ -13,6 +13,7 @@ import pygame
 import os
 import sys
 import pickle
+import math
 
 # --- Path Setup ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,8 +72,8 @@ max_zoom = 5.0
 editor_map = Map(MAP_NAME, MAP_WIDTH, MAP_HEIGHT, MESH_DENSITY, EDGE_TOLERANCE)
 
 # Ensure structures exist
-if editor_map.vents_mesh is None: editor_map.vents_mesh = {}
-if editor_map.vents_access_points is None: editor_map.vents_access_points = []
+if editor_map.vents_mesh.adjacency_map is None: editor_map.vents_mesh.adjacency_map = {}
+if editor_map.vents_mesh.exits is None: editor_map.vents_mesh.exits = []
 # Ensure spawn exists if not loaded
 if not hasattr(editor_map, 'enemy_spawn') or editor_map.enemy_spawn is None:
     editor_map.enemy_spawn = (0, 0)
@@ -205,35 +206,65 @@ while running:
                     i, j = to_grid(wx, wy)
                     # Check bounds
                     if 0 <= i < (MAP_WIDTH // MESH_DENSITY) and 0 <= j < (MAP_HEIGHT // MESH_DENSITY):
-                        if (i, j) in editor_map.vents_mesh:
+                        if (i, j) in editor_map.vents_mesh.adjacency_map:
                             # Remove node and clean up connections to it
-                            del editor_map.vents_mesh[(i, j)]
-                            for neighbors in editor_map.vents_mesh.values():
-                                if (i, j) in neighbors:
-                                    neighbors.remove((i, j))
+                            del editor_map.vents_mesh.adjacency_map[(i, j)]
+                            
+                            # FIX: Clean up connections from neighbors using list comprehension
+                            target_node = (i, j)
+                            for key in editor_map.vents_mesh.adjacency_map:
+                                neighbors = editor_map.vents_mesh.adjacency_map[key]
+                                # Filter out any edge where the neighbor node is the deleted node
+                                editor_map.vents_mesh.adjacency_map[key] = [
+                                    edge for edge in neighbors if edge[0] != target_node
+                                ]
+                                
+                            # Remove node from exits if it was one
+                            if (i, j) in editor_map.vents_mesh.exits:
+                                editor_map.vents_mesh.exits.remove((i, j))
                         else:
-                            editor_map.vents_mesh[(i, j)] = [] 
-                elif event.button == 2 or event.button == 3:
-                     pan_active = True
-                     last_mouse_pos = event.pos
+                            editor_map.vents_mesh.adjacency_map[(i, j)] = []
 
             # --- VENT CONNECT MODE ---
             elif current_mode == "VENT_CONNECT":
                 if event.button == 1:
                     i, j = to_grid(wx, wy)
-                    if (i, j) in editor_map.vents_mesh:
+                    node2 = (i, j)
+
+                    if node2 in editor_map.vents_mesh.adjacency_map:
+                        
                         if selected_vent_node is None:
-                            selected_vent_node = (i, j)
+                            selected_vent_node = node2
                         else:
+                            node1 = selected_vent_node
+                            
                             # If clicked same node, deselect
-                            if selected_vent_node == (i, j):
+                            if node1 == node2:
                                 selected_vent_node = None
                             else:
-                                # Create bidirectional link
-                                if (i, j) not in editor_map.vents_mesh[selected_vent_node]:
-                                    editor_map.vents_mesh[selected_vent_node].append((i, j))
-                                if selected_vent_node not in editor_map.vents_mesh[(i, j)]:
-                                    editor_map.vents_mesh[(i, j)].append(selected_vent_node)
+                                # Calculate the Euclidean distance (weight)
+                                center1 = get_tile_center_world(*node1)
+                                center2 = get_tile_center_world(*node2)
+                                
+                                # Use geometry.euclidian_distance(p1, p2)
+                                # Assuming you have access to a geometry utility function
+                                w = math.sqrt((center1[0] - center2[0])**2 + (center1[1] - center2[1])**2)
+                                
+                                # Create weighted edge tuples
+                                edge_to_2 = (node2, w)
+                                edge_to_1 = (node1, w)
+                                
+                                # Create bidirectional link, replacing existing link if present
+                                
+                                # 1. Update Node 1 -> Node 2
+                                if edge_to_2 not in editor_map.vents_mesh.adjacency_map[node1]:
+                                    # Ensure we don't duplicate a link
+                                    editor_map.vents_mesh.adjacency_map[node1].append(edge_to_2)
+                                
+                                # 2. Update Node 2 -> Node 1
+                                if edge_to_1 not in editor_map.vents_mesh.adjacency_map[node2]:
+                                    editor_map.vents_mesh.adjacency_map[node2].append(edge_to_1)
+
                                 selected_vent_node = None # Reset after link
                     else:
                         selected_vent_node = None # Deselect if clicking empty space
@@ -247,10 +278,10 @@ while running:
                 if event.button == 1:
                     i, j = to_grid(wx, wy)
                     if 0 <= i < (MAP_WIDTH // MESH_DENSITY) and 0 <= j < (MAP_HEIGHT // MESH_DENSITY):
-                        if (i, j) in editor_map.vents_access_points:
-                            editor_map.vents_access_points.remove((i, j))
+                        if (i, j) in editor_map.vents_mesh.exits:
+                            editor_map.vents_mesh.exits.remove((i, j))
                         else:
-                            editor_map.vents_access_points.append((i, j))
+                            editor_map.vents_mesh.exits.append((i, j))
                 elif event.button == 2 or event.button == 3:
                      pan_active = True
                      last_mouse_pos = event.pos
@@ -330,21 +361,33 @@ while running:
     pygame.draw.lines(screen, COLOR_MAP_BORDER, True, [tl, tr, br, bl], 2)
 
     # -- Draw Vent Connections (White Lines) --
-    if editor_map.vents_mesh:
-        for (i, j), neighbors in editor_map.vents_mesh.items():
-            start_center = get_tile_center_world(i, j)
-            start_screen = to_screen(*start_center)
-            
-            for (ni, nj) in neighbors:
-                # Simple check to avoid double drawing (only draw if node < neighbor)
-                # or just draw everything (easier for bidirectional)
-                end_center = get_tile_center_world(ni, nj)
-                end_screen = to_screen(*end_center)
-                pygame.draw.line(screen, COLOR_VENT_LINK, start_screen, end_screen, 2)
+    if editor_map.vents_mesh.adjacency_map:
+            drawn_edges = set()
+            for (i, j), weighted_neighbors in editor_map.vents_mesh.adjacency_map.items():
+                start_node = (i, j)
+                start_center = get_tile_center_world(i, j)
+                start_screen = to_screen(*start_center)
+                
+                # FIX: Loop over the weighted tuple (neighbor_node, weight)
+                for neighbor_node, weight in weighted_neighbors: 
+                    ni, nj = neighbor_node # Unpack the (ni, nj) grid indices
+
+                    end_node = neighbor_node # (ni, nj)
+                    
+                    # Check if we already drew this edge
+                    if (end_node, start_node) in drawn_edges:
+                        continue
+                    
+                    end_center = get_tile_center_world(ni, nj) # Use unpacked indices
+                    end_screen = to_screen(*end_center)
+                    pygame.draw.line(screen, COLOR_VENT_LINK, start_screen, end_screen, 2)
+                    
+                    # Mark this edge as drawn
+                    drawn_edges.add((start_node, end_node))
 
     # -- Draw Vent Nodes (Blue) --
-    if editor_map.vents_mesh:
-        for (i, j) in editor_map.vents_mesh.keys():
+    if editor_map.vents_mesh.adjacency_map:
+        for (i, j) in editor_map.vents_mesh.adjacency_map.keys():
             world_x = i * MESH_DENSITY
             world_y = j * MESH_DENSITY
             screen_x, screen_y = to_screen(world_x, world_y)
@@ -361,8 +404,8 @@ while running:
             screen.blit(s, (screen_x, screen_y))
 
     # -- Draw Vent Access Points (Cyan) --
-    if editor_map.vents_access_points:
-        for (i, j) in editor_map.vents_access_points:
+    if editor_map.vents_mesh.exits:
+        for (i, j) in editor_map.vents_mesh.exits:
             world_x = i * MESH_DENSITY
             world_y = j * MESH_DENSITY
             screen_x, screen_y = to_screen(world_x, world_y)
@@ -404,7 +447,7 @@ while running:
 
     # -- UI Info --
     font = pygame.font.SysFont("Arial", 18)
-    info_text = f"Zoom: {camera_zoom:.2f} | Walls: {len(drawn_rects)} | Vents: {len(editor_map.vents_mesh)} | Exits: {len(editor_map.vents_access_points)}"
+    info_text = f"Zoom: {camera_zoom:.2f} | Walls: {len(drawn_rects)} | Vents: {len(editor_map.vents_mesh.adjacency_map)} | Exits: {len(editor_map.vents_mesh.exits)}"
     text_surf = font.render(info_text, True, (255, 255, 255))
     screen.blit(text_surf, (20, 10))
     

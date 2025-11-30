@@ -43,7 +43,7 @@ class Alien(Entity):
         self.search_speed = 2
         self.sprint_speed = 4
         self.rush_speed = 9
-        self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
+        self.state = 'COMPUTE_VENT_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
         self.rush_threshold = 64
         self.previous_state = None
 
@@ -62,7 +62,7 @@ class Alien(Entity):
         self.look_angular_velocity = 0 #in degrees per second
         self.look_angular_acceleration = 50000 # in degrees/s^2
 
-        self.is_in_frontstage = True
+        self.is_in_frontstage = False
         
         # --- Pathfinding and Navigation ---
         self.current_path = None # list of (x, y) positions
@@ -250,7 +250,8 @@ class Alien(Entity):
         super().go_to(self.next_position, current_map, dt)
 
     def follow_vent_path(self, current_map, dt):
-        if not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
+        if (not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2
+            or euclidian_distance((self.x_pos, self.y_pos), self.current_objective) < self.size[0]//2):
             raise ValueError
         if self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
             self.next_position = self.current_path.pop()
@@ -360,10 +361,14 @@ class Alien(Entity):
             except ValueError:
                 self.switch_state('LOOK_AROUND')
 
-    def update_compute_vent_path(self, current_map, dt):
-        rand_x, rand_y =  current_map.random_point()
+    def update_compute_vent_patrol(self, current_map, dt):
+        random_point = current_map.vents_mesh.random_point()
+        if random_point == None:
+            self.last_path_computation_time = pygame.time.get_ticks()
+            return
+        rand_x, rand_y = current_map.vents_mesh.random_point()
 
-        self.is_on_unaccessible_tile, path = current_map.vent_mesh.compute_path(self, (rand_x, rand_y)) 
+        path = current_map.vents_mesh.compute_path(self, (rand_x, rand_y))
         
         if path:
             self.current_path = path
@@ -378,7 +383,7 @@ class Alien(Entity):
         now = pygame.time.get_ticks()
         self.current_speed = self.base_speed
         try:
-            self.follow_path(current_map, dt)
+            self.follow_vent_path(current_map, dt)
         except ValueError:
             self.switch_state('COMPUTE_VENT_PATROL')
 
