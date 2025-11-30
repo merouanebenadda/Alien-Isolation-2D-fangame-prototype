@@ -1,6 +1,6 @@
 import sys, pygame
 import gc
-from entities import Player, Alien
+from entities import Player, Alien, Director
 from environment import Map
 from renderer import GameRenderer, MenuRenderer
 from sound import SoundManager
@@ -31,7 +31,9 @@ def initialize_new_game(screen):
 
     enemy = Alien(current_map.enemy_spawn)
 
-    return current_map, renderer, player, enemy
+    director = Director()
+
+    return current_map, renderer, player, enemy, director
 
 def initialize_main_menu():
     global game_state, renderer, screen, sound_manager
@@ -44,11 +46,12 @@ def initialize_main_menu():
 
 def cleanup_game_objects():
     """Clears references to the heavy game objects."""
-    global current_map, renderer, player, enemy
+    global current_map, renderer, player, enemy, director
     
     current_map = None
     player = None
     enemy = None
+    director = None
     
     renderer = None 
     
@@ -65,7 +68,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 game_state = "GAME_RUNNING"
-                current_map, renderer, player, alien = initialize_new_game(screen)
+                current_map, renderer, player, alien, director = initialize_new_game(screen)
 
             if event.key == pygame.K_m:
                 if sound_manager.mute:
@@ -99,6 +102,7 @@ while running:
 
         player.update(is_pressed, renderer.get_absolute_position(pygame.mouse.get_pos()), alien, current_map, sound_manager, dt)
         alien.update(player, current_map, sound_manager, dt)
+        director.update(player, alien)
 
         renderer.render_game(player, alien, dt)
 

@@ -57,11 +57,10 @@ class MotionTracker():
         distance = euclidian_distance_entities(player, alien)
 
         if self.in_fov(alien_angle, look_orientation) and distance  < self.max_range:
-
             delta = radians(alien_angle-look_orientation)
             self.dot_pos = (distance/self.max_range*self.display_size[0]*sin(delta) + self.TRACKER_SIZE[0]/2,
                             -distance/self.max_range*self.display_size[0]*cos(delta) + self.display_size[1] + self.display_pos[1])
-            intensity = int(255*exp(-(now%self.blink_decay)/self.blink_speed))
+            intensity = int(255*exp(-(now-self.last_beep_time)/self.blink_speed))
             self.dot_texture.set_alpha(intensity)
             self.texture.blit(self.dot_texture, (self.dot_pos))
             self.detects_alien = True

@@ -250,8 +250,7 @@ class Alien(Entity):
         super().go_to(self.next_position, current_map, dt)
 
     def follow_vent_path(self, current_map, dt):
-        if (not self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2
-            or euclidian_distance((self.x_pos, self.y_pos), self.current_objective) < self.size[0]//2):
+        if (euclidian_distance((self.x_pos, self.y_pos), self.current_objective) < self.size[0]//2):
             raise ValueError
         if self.current_path and euclidian_distance((self.x_pos, self.y_pos), self.next_position) < self.size[0]//2:
             self.next_position = self.current_path.pop()
@@ -387,6 +386,37 @@ class Alien(Entity):
         except ValueError:
             self.switch_state('COMPUTE_VENT_PATROL')
 
+    def update_compute_nearest_vent_exit(self, current_map, dt):
+        nearest_exit = current_map.vents_mesh.get_closest_vent_exit((self.x_pos, self.y_pos))
+        x, y = nearest_exit
+
+        path = current_map.vents_mesh.compute_path(self, (x, y))
+        
+        if path:
+            self.current_path = path
+            self.next_position = self.current_path.pop()
+            self.current_objective = (x, y)
+            self.switch_state('GO_TO_NEAREST_VENT_EXIT')
+        else:
+            self.last_path_computation_time = pygame.time.get_ticks()
+            pass
+
+    def update_go_to_nearest_vent_exit(self, current_map, dt):
+        now = pygame.time.get_ticks()
+        self.current_speed = self.base_speed
+        try:
+            self.follow_vent_path(current_map, dt)
+        except ValueError:
+            self.switch_state('EXIT_VENT')
+
+    def update_enter_vent(self):
+        # Animation logic to be added
+        self.switch_state('COMPUTE_VENT_PATROL')
+
+    def update_exit_vent(self):
+        # Animation logic to be added
+        self.switch_state('COMPUTE_PATROL')
+
     def update_look_around(self):
         now = pygame.time.get_ticks()
         if now - self.look_around_turn_timer > self.look_around_duration:
@@ -463,6 +493,18 @@ class Alien(Entity):
 
         if self.state == 'VENT_PATROL':
             self.update_vent_patrol(current_map, dt)
+
+        if self.state == 'ENTER_VENT':
+            self.update_enter_vent()
+
+        if self.state == 'EXIT_VENT':
+            self.update_exit_vent()
+
+        if self.state == 'COMPUTE_NEAREST_VENT_EXIT':
+            self.update_compute_nearest_vent_exit(current_map, dt)
+
+        if self.state == 'GO_TO_NEAREST_VENT_EXIT':
+            self.update_go_to_nearest_vent_exit(current_map, dt)
 
         if self.state == 'KILL':
             self.update_kill(player, current_map, dt)

@@ -48,10 +48,12 @@ class Mesh():
         
         return (i, j)
     
-    def position(self, i, j):
+    def position(self, i, j=None):
         """
         Returns the center of the tile of indices (i, j)
         """
+        if j == None:
+            i, j = i
         density = self.density
         return (density*i + density//2, density*j + density//2)
     
@@ -131,10 +133,13 @@ class VentMesh(Mesh):
     def __init__(self, size, width, height, density):
         super().__init__(size, width, height, density)
         self.nodes = {} # keys: coordinates of nodes, values: list of connected nodes (i, j)
-        self.access_points = [] # list of (x, y) positions of vent access points
-        self.exits = []
+        self.exits = [] # list of (i, j) positions of vent access points
 
     def compute_path(self, entity1, point):
+        """
+        Computes a path from the entity's current position to the target point using A* on the vent mesh.
+        Returns a list of continuous (x, y) positions representing the path, starting with the target point.
+        """
         path_start = self.get_closest_vent_node(self.nearest_node(entity1.x_pos, entity1.y_pos))
         path_end = self.get_closest_vent_node(self.nearest_node(point))
 
@@ -170,6 +175,31 @@ class VentMesh(Mesh):
                 current_best_node = node
                 
         return current_best_node
+
+    def get_closest_vent_exit(self, pos_x, pos_y=None):
+        """
+        Finds the nearest vent exit point to the given continuous position (pos_x, pos_y) returned as (x, y).
+        """
+        if pos_y == None:
+            pos_x, pos_y = pos_x
+
+        if not self.exits:
+            return None
+        
+        current_best_exit = None
+        min_dist_sq = float('inf')
+
+        # Iterate over all defined vent exits
+        for exit_point in self.exits:
+            # Calculate squared Euclidean distance
+            exit_point = self.position(exit_point)
+            dist_sq = (exit_point[0] - pos_x)**2 + (exit_point[1] - pos_y)**2
+            
+            if dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+                current_best_exit = exit_point
+                
+        return (current_best_exit)
 
     def random_point(self):
         """Returns a random coordinate (x, y) situated exactly on a vent line."""
