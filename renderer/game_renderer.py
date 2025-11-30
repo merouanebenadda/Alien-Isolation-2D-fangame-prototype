@@ -138,27 +138,27 @@ class GameRenderer():
     def render_entity(self, entity):
         body_center_screen_x, body_center_screen_y = self.get_screen_position_entity(entity)
         
-        sx, sy = entity.body_size
-        body_render_pos_x, body_render_pos_y = body_center_screen_x - sx/2, body_center_screen_y - sy/2
+        # sx, sy = entity.body_size
+        # body_render_pos_x, body_render_pos_y = body_center_screen_x - sx/2, body_center_screen_y - sy/2
 
-        px, py = entity.head_pivot
+        # px, py = entity.head_pivot
 
-        rotation_rad = radians(entity.look_orientation)
+        # rotation_rad = radians(entity.look_orientation)
         
-        rotated_dx = px * cos(rotation_rad) - py * sin(rotation_rad)
-        rotated_dy = px * sin(rotation_rad) + py * cos(rotation_rad)
+        # rotated_dx = px * cos(rotation_rad) - py * sin(rotation_rad)
+        # rotated_dy = px * sin(rotation_rad) + py * cos(rotation_rad)
 
-        head_center_screen_x = body_center_screen_x + rotated_dx
-        head_center_screen_y = body_center_screen_y + rotated_dy
+        # head_center_screen_x = body_center_screen_x + rotated_dx
+        # head_center_screen_y = body_center_screen_y + rotated_dy
 
 
-        head_size_x, head_size_y = entity.head_size
+        # head_size_x, head_size_y = entity.head_size
         
-        head_render_pos_x = head_center_screen_x - head_size_x / 2
-        head_render_pos_y = head_center_screen_y - head_size_y / 2
+        # head_render_pos_x = head_center_screen_x - head_size_x / 2
+        # head_render_pos_y = head_center_screen_y - head_size_y / 2
         
         self.blit_rotate(entity, entity.body_texture_original, (body_center_screen_x, body_center_screen_y), entity.body_rect.center, -entity.orientation)
-        self.blit_rotate(entity, entity.head_texture_original, (body_center_screen_x, body_center_screen_y), entity.head_pivot, -entity.look_orientation)
+        # self.blit_rotate(entity, entity.head_texture_original, (body_center_screen_x, body_center_screen_y), entity.head_pivot, -entity.look_orientation)
 
     def render_debug(self, player, alien, dt):
         # Draw walls

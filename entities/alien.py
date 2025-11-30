@@ -22,8 +22,8 @@ class Alien(Entity):
         self.size = (25, 25)
         self.rect = pygame.rect.Rect(0, 0, self.size[0], self.size[1])
 
-        self.body_size = (50, 50)
-        self.body_surface = pygame.image.load('assets/textures/alien/body.png').convert_alpha()
+        self.body_size = (25, 25)
+        self.body_surface = pygame.image.load('assets/textures/alien/red_dot.png').convert_alpha()
         self.body_texture_original = pygame.transform.scale(self.body_surface, self.body_size)
         self.body_texture = self.body_texture_original
         self.body_rect = self.body_texture.get_rect()
@@ -31,10 +31,10 @@ class Alien(Entity):
 
         self.head_size = (36, 10)
         self.head_pivot = (15, 5)
-        self.head_surface = pygame.image.load('assets/textures/alien/head.png').convert_alpha()
-        self.head_texture_original = pygame.transform.scale(self.head_surface, self.head_size)
-        self.head_texture = self.head_texture_original
-        self.head_rect = self.head_texture.get_rect()
+        # self.head_surface = pygame.image.load('assets/textures/alien/head.png').convert_alpha()
+        # self.head_texture_original = pygame.transform.scale(self.head_surface, self.head_size)
+        # self.head_texture = self.head_texture_original
+        # self.head_rect = self.head_texture.get_rect()
 
         
         # --- Movement and State ---
@@ -110,7 +110,7 @@ class Alien(Entity):
 
     def update_textures(self):
         self.body_texture = pygame.transform.rotate(self.body_texture_original, -self.orientation)
-        self.head_texture = pygame.transform.rotate(self.head_texture_original, -self.look_orientation)
+        # self.head_texture = pygame.transform.rotate(self.head_texture_original, -self.look_orientation)
 
     def update_look_orientation(self, player, current_map, dt):
         now = pygame.time.get_ticks()
@@ -121,6 +121,8 @@ class Alien(Entity):
             goal_orientation = self.orientation
         if self.entity_in_fov(player, current_map):
             self.look_to = angle_entity(self, player)
+        elif self.state in ['CHASE', 'SEARCH']:
+            goal_orientation = self.heading_orientation
 
         angle_diff = goal_orientation - self.look_orientation
         angle_diff = (angle_diff + 540)%360 - 180 # normalize the difference to (-180, 180]
