@@ -15,10 +15,17 @@ class Director():
         self.vent_entry_threshold = 10 # Aggression level to enter vents
         self.vent_exit_threshold = 50  # Aggression level to exit vents
 
+        self.hint_cooldown = 90000  # Time between hints in milliseconds
+        self.last_hint_time = 0
+
+        self.player_hint_range = (50, 250)  # Range for hint positions
+
     def update_aggression_level(self, now):
         if self.alien.is_in_frontstage:
             if not self.alien.entity_in_fov(self.player, self.current_map):
                 self.aggression_level = max(0, self.aggression_level - 0.01)
+            if self.alien.entity_in_fov(self.player, self.current_map):
+                self.aggression_level = 100
 
         else:
             self.aggression_level = min(100, self.aggression_level + 0.02)
@@ -28,10 +35,20 @@ class Director():
 
         self.update_aggression_level(now)
 
+        if self.current_order == "ENTER_BACKSTAGE" and not self.alien.is_in_frontstage:
+            self.current_order = None
+        
+        elif self.current_order == "EXIT_BACKSTAGE" and self.alien.is_in_frontstage:
+            self.current_order = None
+
         if self.alien.is_in_frontstage and self.current_order != "ENTER_BACKSTAGE":
             if self.aggression_level < self.vent_entry_threshold:
                 self.current_order = "ENTER_BACKSTAGE"
                 self.alien.switch_state('COMPUTE_NEAREST_VENT_ENTRY')
+            elif now - self.last_hint_time > self.hint_cooldown and self.alien.state == 'PATROL':
+                self.last_hint_time = now
+                random_hint_position = self.current_map.nav_mesh.random_tile(self.player, self.player_hint_range)
+                self.alien.switch_state('COMPUTE_PATROL', objective= random_hint_position)
 
         elif self.current_order != "EXIT_BACKSTAGE" and self.aggression_level > self.vent_exit_threshold:
             self.current_order = "EXIT_BACKSTAGE"

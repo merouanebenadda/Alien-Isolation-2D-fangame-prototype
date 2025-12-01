@@ -43,7 +43,7 @@ class Alien(Entity):
         self.search_speed = 2
         self.sprint_speed = 4
         self.rush_speed = 9
-        self.state = 'COMPUTE_VENT_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
+        self.state = 'COMPUTE_PATROL' # 'RUSH', 'FIND', 'PATROL', 'HISS', 'SEARCH'
         self.rush_threshold = 64
         self.previous_state = None
 
@@ -62,12 +62,13 @@ class Alien(Entity):
         self.look_angular_velocity = 0 #in degrees per second
         self.look_angular_acceleration = 50000 # in degrees/s^2
 
-        self.is_in_frontstage = False
+        self.is_in_frontstage = True
         
         # --- Pathfinding and Navigation ---
         self.current_path = None # list of (x, y) positions
         self.next_position = None
         self.current_objective = None
+        self.objective_hint = None
         self.is_on_unaccessible_tile = None
         self.rush_range = 100
         self.kill_range = self.size[0]
@@ -173,9 +174,10 @@ class Alien(Entity):
 
         self.orientation = (self.orientation+turn)%360
 
-    def switch_state(self, state, sound_manager=None):
+    def switch_state(self, state, objective=None, sound_manager=None):
         now = pygame.time.get_ticks()
         self.previous_state = self.state
+        self.objective_hint = objective
 
         if state in ['COMPUTE_CHASE', 'COMPUTE_SEARCH', 'COMPUTE_PATROL', 'HISS'] and self.previous_state != 'LOOK_AROUND':
             self.hiss_timer = now
@@ -183,7 +185,7 @@ class Alien(Entity):
 
         if state == 'COMPUTE_CHASE' and self.previous_state != 'CHASE':
             self.chase_timer = now
-            
+    
         if state == 'LOOK_AROUND':
             self.look_angular_velocity = 0
             self.look_around_duration = gauss(self.look_around_mean, self.look_around_std_dev)
@@ -359,19 +361,22 @@ class Alien(Entity):
             except ValueError:
                 self.switch_state('LOOK_AROUND')
 
-    def update_compute_vent_patrol(self, current_map, dt):
-        random_point = current_map.vents_mesh.random_point()
-        if random_point == None:
-            self.last_path_computation_time = pygame.time.get_ticks()
-            return
-        rand_x, rand_y = current_map.vents_mesh.random_point()
+    def update_compute_vent_patrol(self, current_map, objective=None):
+        if objective == None:
+            objective = current_map.vents_mesh.random_point()
+            if objective == None:
+                self.last_path_computation_time = pygame.time.get_ticks()
+                return
+        elif self.objective_hint != None:
+            objective = self.objective_hint
+            self.objective_hint = None
 
-        path = current_map.vents_mesh.compute_path(self, (rand_x, rand_y))
+        path = current_map.vents_mesh.compute_path(self, objective)
         
         if path:
             self.current_path = path
             self.next_position = self.current_path.pop()
-            self.current_objective = (rand_x, rand_y)
+            self.current_objective = objective
             self.switch_state('VENT_PATROL')
         else:
             self.last_path_computation_time = pygame.time.get_ticks()
@@ -439,7 +444,7 @@ class Alien(Entity):
     def update_exit_vent(self, sound_manager):
         # Animation logic to be added
 
-        sound_manager.play_sfx('exit_vent')
+        sound_manager.play_sfx('exit_vent', 0.5)
         self.switch_state('COMPUTE_PATROL')
 
     def update_look_around(self):
@@ -473,18 +478,18 @@ class Alien(Entity):
         #self.update_textures()
 
         if self.state == 'SEARCH' and self.entity_in_fov(player, current_map):
-            self.switch_state('CHASE', sound_manager)
+            self.switch_state('CHASE', sound_manager=sound_manager)
 
         elif (self.state != 'KILL' and 
             self.entity_in_fov(player, current_map) and euclidian_distance_entities(self, player) < self.kill_range):
-            self.switch_state('KILL', sound_manager)
+            self.switch_state('KILL', sound_manager=sound_manager)
 
         elif (self.state != 'KILL' and self.entity_in_fov(player, current_map) and euclidian_distance_entities(self, player) < self.rush_range):
             self.switch_state('RUSH')
         
         elif (self.state != 'KILL' and self.state != 'HISS' and self.state != 'CHASE' and self.state != 'COMPUTE_CHASE'
             and self.entity_in_fov(player, current_map)):
-            self.switch_state('HISS', sound_manager)
+            self.switch_state('HISS', sound_manager=sound_manager)
             
         if self.state == 'HISS':
             self.update_hiss(player, current_map, dt)
@@ -514,12 +519,12 @@ class Alien(Entity):
             self.update_rush(player, current_map, dt)
 
         if self.state == 'COMPUTE_VENT_PATROL':
-            self.update_compute_vent_patrol(current_map, dt)
+            self.update_compute_vent_patrol(current_map)
 
         if self.state == 'VENT_PATROL':
             self.update_vent_patrol(current_map, dt)
 
-        if self.state == 'ENTER_VENT':
+        elif self.state == 'ENTER_VENT':
             self.update_enter_vent(sound_manager)
 
         if self.state == 'COMPUTE_NEAREST_VENT_ENTRY':
@@ -528,7 +533,7 @@ class Alien(Entity):
         if self.state == 'GO_TO_NEAREST_VENT_ENTRY':
             self.update_go_to_nearest_vent_entry(current_map, dt)
 
-        if self.state == 'EXIT_VENT':
+        elif self.state == 'EXIT_VENT':
             self.update_exit_vent(sound_manager)
 
         if self.state == 'COMPUTE_NEAREST_VENT_EXIT':

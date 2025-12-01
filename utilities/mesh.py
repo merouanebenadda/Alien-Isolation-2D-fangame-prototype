@@ -11,9 +11,9 @@ class Mesh():
         self.density = density
         self.adjacency_map = {}
 
-    def random_tile(self, enemy, range): # /!\ has to be optimized, especially for bigger maps
+    def random_tile(self, entity, range): # /!\ has to be optimized, especially for bigger maps
         inf, sup = range
-        x, y = enemy.x_pos, enemy.y_pos
+        x, y = entity.x_pos, entity.y_pos
 
         n = len(self.adjacency_map)
 
