@@ -65,7 +65,7 @@ class GameRenderer():
 
     def render_game(self, player, alien, dt):
         font = pygame.font.Font(None, 40)
-        self.screen.fill((100, 100, 100))
+        self.screen.fill((60, 64, 57))
         self.camera.target_entity = player
 
         pygame.mouse.set_visible(False)
@@ -103,7 +103,7 @@ class GameRenderer():
                 x, y = wall.rect.topleft
                 width, height = wall.rect.width, wall.rect.height
                 wall_rect = pygame.Rect(x-self.camera.offset_x, y-self.camera.offset_y, width, height)
-                pygame.draw.rect(self.screen, (255, 0, 0), wall_rect)
+                pygame.draw.rect(self.screen, (77, 83, 85), wall_rect)
 
     def render_player(self, player):
         render_pos_x, render_pos_y = self.camera.resolution
