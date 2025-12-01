@@ -4,6 +4,15 @@ A 2D top-down stealth and survival game inspired by *Alien: Isolation*, focused 
 
 ---
 
+
+## 🧠 Enemy AI Architecture (Finite State Machine)
+
+The Alien's behavior is driven by a complex Finite State Machine (FSM) that dictates its movement, aggression, and tactical decision-making, including dedicated phases for traversing the vent system.
+
+![Alien AI Finite State Machine Diagram](assets/readme_media/fsm.png)
+
+---
+
 ## Getting Started
 
 This guide covers setting up the project and running the game.
