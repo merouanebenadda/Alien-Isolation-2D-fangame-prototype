@@ -29,11 +29,11 @@ def initialize_new_game(screen):
 
     player = Player(current_map.player_spawn)
 
-    enemy = Alien(current_map.enemy_spawn)
+    alien = Alien(current_map.enemy_spawn)
 
-    director = Director()
+    director = Director(player, alien, current_map)
 
-    return current_map, renderer, player, enemy, director
+    return current_map, renderer, player, alien, director
 
 def initialize_main_menu():
     global game_state, renderer, screen, sound_manager
@@ -102,7 +102,7 @@ while running:
 
         player.update(is_pressed, renderer.get_absolute_position(pygame.mouse.get_pos()), alien, current_map, sound_manager, dt)
         alien.update(player, current_map, sound_manager, dt)
-        director.update(player, alien)
+        director.update()
 
         renderer.render_game(player, alien, dt)
 

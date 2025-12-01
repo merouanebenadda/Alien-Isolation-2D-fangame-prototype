@@ -176,7 +176,7 @@ class VentMesh(Mesh):
                 
         return current_best_node
 
-    def get_closest_vent_exit(self, pos_x, pos_y=None):
+    def get_closest_vent_access(self, pos_x, pos_y=None):
         """
         Finds the nearest vent exit point to the given continuous position (pos_x, pos_y) returned as (x, y).
         """

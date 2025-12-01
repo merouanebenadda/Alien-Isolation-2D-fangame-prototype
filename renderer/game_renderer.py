@@ -203,7 +203,7 @@ class GameRenderer():
 
         state = alien.state
         state_surface = font.render(state, True, (0, 0, 0))
-        screen.blit(state_surface, (1700, 1040))
+        screen.blit(state_surface, (1500, 1040))
 
         # To be updated
         # if self.dark_mode:

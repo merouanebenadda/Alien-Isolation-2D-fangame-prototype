@@ -291,7 +291,6 @@ class Alien(Entity):
             self.switch_state('COMPUTE_CHASE')
 
         if self.entity_in_fov(player, current_map):
-            self.last_time_seen = now
             try:
                 self.follow_path(current_map, dt)
             except ValueError:
@@ -386,8 +385,35 @@ class Alien(Entity):
         except ValueError:
             self.switch_state('COMPUTE_VENT_PATROL')
 
+    def update_compute_nearest_vent_entry(self, current_map, dt):
+        nearest_entry = current_map.vents_mesh.get_closest_vent_access((self.x_pos, self.y_pos))
+        x, y = nearest_entry
+
+        _, path = current_map.nav_mesh.compute_path(self, (x, y))
+        
+        if path:
+            self.current_path = path
+            self.next_position = self.current_path.pop()
+            self.current_objective = (x, y)
+            self.switch_state('GO_TO_NEAREST_VENT_ENTRY')
+        else:
+            self.last_path_computation_time = pygame.time.get_ticks()
+            pass
+
+    def update_go_to_nearest_vent_entry(self, current_map, dt):
+        now = pygame.time.get_ticks()
+        self.current_speed = self.base_speed
+        try:
+            self.follow_path(current_map, dt)
+        except ValueError:
+            self.switch_state('ENTER_VENT')
+
+    def update_enter_vent(self):
+        # Animation logic to be added
+        self.switch_state('COMPUTE_VENT_PATROL')
+
     def update_compute_nearest_vent_exit(self, current_map, dt):
-        nearest_exit = current_map.vents_mesh.get_closest_vent_exit((self.x_pos, self.y_pos))
+        nearest_exit = current_map.vents_mesh.get_closest_vent_access((self.x_pos, self.y_pos))
         x, y = nearest_exit
 
         path = current_map.vents_mesh.compute_path(self, (x, y))
@@ -408,10 +434,6 @@ class Alien(Entity):
             self.follow_vent_path(current_map, dt)
         except ValueError:
             self.switch_state('EXIT_VENT')
-
-    def update_enter_vent(self):
-        # Animation logic to be added
-        self.switch_state('COMPUTE_VENT_PATROL')
 
     def update_exit_vent(self):
         # Animation logic to be added
@@ -496,6 +518,12 @@ class Alien(Entity):
 
         if self.state == 'ENTER_VENT':
             self.update_enter_vent()
+
+        if self.state == 'COMPUTE_NEAREST_VENT_ENTRY':
+            self.update_compute_nearest_vent_entry(current_map, dt)
+
+        if self.state == 'GO_TO_NEAREST_VENT_ENTRY':
+            self.update_go_to_nearest_vent_entry(current_map, dt)
 
         if self.state == 'EXIT_VENT':
             self.update_exit_vent()

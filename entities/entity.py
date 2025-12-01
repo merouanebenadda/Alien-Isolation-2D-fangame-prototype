@@ -23,6 +23,7 @@ class Entity(pygame.sprite.Sprite):
         self.direction_vector_y = 0
         
         self.is_in_frontstage = True
+        self.last_time_seen = 0
 
     def update_heading_orientation(self):
         if abs(self.direction_vector_x) > 1e-6 or abs(self.direction_vector_y) > 1e-6: 
@@ -172,11 +173,15 @@ class Entity(pygame.sprite.Sprite):
         return abs(delta) <= fov/2 + eps
     
     def entity_in_fov(self, entity, current_map):
+        now = pygame.time.get_ticks()
         if not self.is_in_frontstage:
             return False
         
         angle = angle_entity(self, entity)
-        return self.in_fov(angle, self.look_orientation, self.fov) and self.can_see_entity(entity, current_map)
+        if self.in_fov(angle, self.look_orientation, self.fov) and self.can_see_entity(entity, current_map):
+            self.last_time_seen = now
+            return True
+        return False
 
     def cast_rays(self, orientation, fov, current_map):
         """
