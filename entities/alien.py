@@ -408,8 +408,9 @@ class Alien(Entity):
         except ValueError:
             self.switch_state('ENTER_VENT')
 
-    def update_enter_vent(self):
+    def update_enter_vent(self, sound_manager):
         # Animation logic to be added
+        sound_manager.play_sfx('enter_vent')
         self.switch_state('COMPUTE_VENT_PATROL')
 
     def update_compute_nearest_vent_exit(self, current_map, dt):
@@ -435,8 +436,10 @@ class Alien(Entity):
         except ValueError:
             self.switch_state('EXIT_VENT')
 
-    def update_exit_vent(self):
+    def update_exit_vent(self, sound_manager):
         # Animation logic to be added
+
+        sound_manager.play_sfx('exit_vent')
         self.switch_state('COMPUTE_PATROL')
 
     def update_look_around(self):
@@ -517,7 +520,7 @@ class Alien(Entity):
             self.update_vent_patrol(current_map, dt)
 
         if self.state == 'ENTER_VENT':
-            self.update_enter_vent()
+            self.update_enter_vent(sound_manager)
 
         if self.state == 'COMPUTE_NEAREST_VENT_ENTRY':
             self.update_compute_nearest_vent_entry(current_map, dt)
@@ -526,7 +529,7 @@ class Alien(Entity):
             self.update_go_to_nearest_vent_entry(current_map, dt)
 
         if self.state == 'EXIT_VENT':
-            self.update_exit_vent()
+            self.update_exit_vent(sound_manager)
 
         if self.state == 'COMPUTE_NEAREST_VENT_EXIT':
             self.update_compute_nearest_vent_exit(current_map, dt)
